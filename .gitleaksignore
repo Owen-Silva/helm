@@ -1,0 +1,5 @@
+# gitleaks findings in history, each checked by hand; none is a secret.
+# Fingerprints are commit:file:rule:line of the public history.
+#   test/host/railway.test.js:181: a made-up JWT for the redaction test (header {"alg":"HS256"},
+#   payload {"sub":"1234567890"}, the standard documentation example), asserting it never survives redact().
+2e0668a113f3ea7aa52d9f17433a2748e0f9389c:test/host/railway.test.js:jwt:181
