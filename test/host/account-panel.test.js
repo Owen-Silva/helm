@@ -67,6 +67,7 @@ test('default mode, Claude Code signed in: in use, who it is, Check again calls 
   assert.equal(u.findAll(u.byState('in-use-claude-code')).length, 1);
   assert.match(u.text(), /In use: Claude Code's sign-in/);
   assert.equal(u.findAll(u.byState('cc-signed-in')).length, 1);
+  assert.ok(u.findAll((n) => n.p && n.p.name === 'check').length >= 1, 'the in-use line has its check mark while signed in');
   assert.match(u.text(), /sam\.rivera@example\.com/);
   assert.match(u.text(), /Max · Claude account \(claude\.ai\)/);
   assert.equal(u.findAll(u.byAct('acct-key-input')).length, 1, 'the key form is there');
@@ -84,9 +85,12 @@ test('default mode, Claude Code signed out: the state and the host reason, text 
   if (needHooks(t)) return;
   const u = await show(ccState(CC.out));
   assert.equal(u.findAll(u.byState('cc-signed-out')).length, 1);
-  assert.match(u.text(), /Claude Code isn't signed in/);
-  assert.ok(u.text().includes(NOT_SIGNED_IN), 'the host reason, verbatim');
-  assert.equal(u.text().split(NOT_SIGNED_IN).length - 1, 1, 'the reason is said once (the ready=false reason is the same text)');
+  // The heading says "isn't signed in"; the line under it starts at what to do, so neither is said twice.
+  const what = NOT_SIGNED_IN.replace(/^Claude Code isn't signed in\.\s*/, '');
+  assert.equal(u.text().split("Claude Code isn't signed in").length - 1, 1, 'signed out is said once, in the heading');
+  assert.ok(u.text().includes(what), 'what to do, verbatim');
+  assert.equal(u.text().split(what).length - 1, 1, 'what to do is said once (the ready=false reason is the same text)');
+  assert.equal(u.findAll((n) => n.p && n.p.name === 'check').length, 0, 'no check mark on the in-use line while signed out');
   assert.equal(u.findAll(u.byAct('acct-check')).length, 1);
   noSignIn(u, 'signed out');
   u.click('acct-check');

@@ -45,8 +45,10 @@ function ClaudeCodeWho({ cc }) {
       initial: cc.email ? cc.email[0].toUpperCase() : null });
   }
   if (cc.state === 'signed-out') {
+    // The heading already says it, so the line under it starts at what to do.
+    const why = (cc.reason || NOT_SIGNED_IN).replace(/^Claude Code isn't signed in\.\s*/, '');
     return who('cc-signed-out', { off: true, name: "Claude Code isn't signed in",
-      sub: `${cc.reason || NOT_SIGNED_IN}${cc.source === 'session' ? ' (A session reported this when it started.)' : ''}` });
+      sub: `${why}${cc.source === 'session' ? ' (A session reported this when it started.)' : ''}` });
   }
   return who('cc-unknown', { off: true, name: "Helm couldn't check Claude Code's sign-in", sub: cc.reason || 'Claude Code gave no reason.' });
 }
@@ -128,7 +130,9 @@ function AccountPanel({ st, setSt, load }) {
       : who('in-use-key', { name: html`API key${s.apiKeyLast4 ? html` <span class="mono">••••${s.apiKeyLast4}</span>` : ''}`,
         sub: s.apiKeySource === 'helm' ? "Saved in Helm · billed to the key's Anthropic Console account" : "Billed to the key's Anthropic Console account" });
   } else {
-    inUse = html`<p class="acct-note" data-state="in-use-claude-code"><${Icon} name="check" size=${14} /><span>Sessions use whatever Claude Code on this PC is signed in with.</span></p>`;
+    // The check mark only when Claude Code is actually signed in; signed out, the block below says why.
+    const ok = cc && cc.state === 'signed-in';
+    inUse = html`<p class="acct-note" data-state="in-use-claude-code">${ok ? html`<${Icon} name="check" size=${14} />` : ''}<span>Sessions use whatever Claude Code on this PC is signed in with.</span></p>`;
   }
   // The host's reason sessions can't start, unless the block below already says it.
   const ccSaysWhy = !keyMode && cc && (cc.state === 'signed-out' || cc.state === 'unknown' || st.reason === cc.reason);
