@@ -1,0 +1,242 @@
+/* Design tokens. Owner: lane shell (C).
+   Helm sits on a blurred photo; surfaces are translucent NEUTRAL greys (no colour cast),
+   1px hairlines, depth from real shadow, one desaturated accent used for state only.
+   Dark is the default; [data-theme=light] overrides; "system" is resolved in JS to dark|light
+   (html[data-theme] always ends up "dark" or "light"; html[data-theme-pref] keeps the choice). */
+
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* canvas + surfaces (alpha over the blurred photo) */
+  --bg: #141516;                         /* fallback under the photo / no photo */
+  --surface-0: rgba(14, 15, 16, 0.50);   /* window chrome: rail, top strip */
+  /* surface-1..3 and overlay add Look Sync's glass panel shift (--glass-panel, set by ui/shell/state.js;
+     0 = exactly these alphas, negative = more see-through), clamped to .30..97 */
+  --surface-1: rgb(22 23 24 / clamp(0.30, calc(0.66 + var(--glass-panel, 0)), 0.97));   /* panels: sidebar, main column, inspector */
+  --surface-2: rgb(40 41 43 / clamp(0.30, calc(0.62 + var(--glass-panel, 0)), 0.97));   /* cards, inputs, bubbles inside a panel */
+  --surface-3: rgb(62 63 66 / clamp(0.30, calc(0.62 + var(--glass-panel, 0)), 0.97));   /* hover / pressed / raised inside a card */
+  --surface-solid: #1f2021;              /* opaque fallback (menus without blur, phone sheet) */
+  --overlay: rgb(29 30 31 / clamp(0.30, calc(0.93 + var(--glass-panel, 0)), 0.97));     /* menus, palette, modals (may add backdrop-filter; legible without it) */
+  --scrim: rgba(6, 7, 8, 0.48);          /* behind modals */
+
+  /* hairlines */
+  --hairline: rgba(255, 255, 255, 0.09);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+  --hairline-inner: rgba(255, 255, 255, 0.05);   /* top inner edge on raised surfaces */
+
+  /* text */
+  --text: #ececea;
+  --text-2: #a9aaa7;
+  --text-3: #75767a;
+  --text-inverse: #141516;
+
+  /* accent: one desaturated steel blue, used for state (selection, primary action, focus) */
+  --accent: #9fb4cc;
+  --accent-strong: #b7c8db;
+  --accent-text: #11161c;               /* text ON an accent fill */
+  --accent-soft: rgba(159, 180, 204, 0.14);
+  --accent-line: rgba(159, 180, 204, 0.42);
+
+  /* semantic */
+  --ok: #8fbf9b;
+  --warn: #d6b874;
+  --danger: #e0877c;
+  --info: #9fb4cc;
+  --ok-soft: rgba(143, 191, 155, 0.13);
+  --warn-soft: rgba(214, 184, 116, 0.14);
+  --danger-soft: rgba(224, 135, 124, 0.14);
+  --info-soft: rgba(159, 180, 204, 0.13);
+
+  /* session status */
+  --st-working: #9fb4cc;
+  --st-waiting: #d6b874;
+  --st-error: #e0877c;
+  --st-idle: #6d6f72;
+
+  /* diffs + code */
+  --diff-add-bg: rgba(110, 170, 125, 0.16);
+  --diff-del-bg: rgba(210, 110, 100, 0.16);
+  --diff-add-text: #a9d4b2;
+  --diff-del-text: #eba69d;
+  --code-bg: rgba(10, 11, 12, 0.46);
+
+  /* depth */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.16);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.30), 0 12px 32px rgba(0, 0, 0, 0.32);
+  --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.34), 0 24px 64px rgba(0, 0, 0, 0.42);
+  /* a small control lifted off its track (send disc, primary button, pressed segment, switch knob, slider thumb) */
+  --shadow-ctl: 0 1px 2px rgba(0, 0, 0, 0.26);
+  --shadow-ctl-tight: 0 1px 1px rgba(0, 0, 0, 0.22);   /* segments 1 px apart: a 2 px blur would reach the neighbour */
+  --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.36);
+  /* keyboard focus: drawn INSIDE the control (2 px ring + 1 px contrast line), so it never bleeds into a
+     neighbour or gets cut by a scroller (lane helm-overlap; tools/overlap-audit.js checks both). Controls
+     whose children cover their edges (image thumbnails) use an inset outline in --focus-color instead. */
+  --focus-color: rgba(159, 180, 204, 0.72);
+  --focus-ring: inset 0 0 0 2px var(--focus-color), inset 0 0 0 3px rgba(20, 21, 22, 0.55);
+  --focus-ring-on-accent: inset 0 0 0 1px var(--accent), inset 0 0 0 3px var(--accent-text);   /* .btn-primary */
+
+  /* scrollbars */
+  --scroll-thumb: rgba(255, 255, 255, 0.14);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.24);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  /* island light (look-sync CONTRACT "Light look", 2026-10-14): Mantle's ground, ink and lines; Helm's panel
+     alphas re-tinted pure white. The wash itself (white at glass.light.dim) lives in shell.css --wash-rgb. */
+  --bg: #f4f6fa;                         /* Mantle --lg-ground: fallback under the photo, phone theme-color */
+  --surface-0: rgba(255, 255, 255, 0.45);   /* bars, strips: white at glass.light.dim's seed (.45) */
+  --surface-1: rgb(255 255 255 / clamp(0.30, calc(0.76 + var(--glass-panel, 0)), 0.97));   /* content panels */
+  --surface-2: rgb(255 255 255 / clamp(0.30, calc(0.70 + var(--glass-panel, 0)), 0.97));   /* cards, inputs inside panels */
+  --surface-3: rgb(236 238 242 / clamp(0.30, calc(0.86 + var(--glass-panel, 0)), 0.97));   /* hover / pressed: a faint ink recess */
+  --surface-solid: #ffffff;
+  --overlay: rgb(255 255 255 / clamp(0.30, calc(0.95 + var(--glass-panel, 0)), 0.97));    /* menus, pop-ups, sheets */
+  --scrim: rgba(30, 31, 32, 0.22);       /* ui/lib/toprow.js SCRIM.light mirrors this */
+
+  --hairline: rgba(11, 14, 26, 0.10);          /* Mantle --lg-edge-out */
+  --hairline-strong: rgba(11, 14, 26, 0.18);
+  --hairline-inner: rgba(255, 255, 255, 0.62); /* Mantle --lg-edge-in, the inner lip */
+
+  --text: #0b0e1a;     /* Mantle --lg-ink */
+  --text-2: #333a4e;   /* --lg-ink-2: ~9.6:1 on a panel over a mid-grey photo */
+  --text-3: #5b6478;   /* --lg-ink-3: ~5:1 on that panel */
+  --text-inverse: #f4f6fa;
+
+  --accent: #4d6784;
+  --accent-strong: #3c536d;
+  --accent-text: #ffffff;
+  --accent-soft: rgba(77, 103, 132, 0.11);
+  --accent-line: rgba(77, 103, 132, 0.40);
+
+  /* semantic: each >= 4.5:1 on a white panel over a mid-grey photo */
+  --ok: #326f45;
+  --warn: #855c12;
+  --danger: #a83e33;
+  --info: #4d6784;
+  --ok-soft: rgba(50, 111, 69, 0.11);
+  --warn-soft: rgba(133, 92, 18, 0.12);
+  --danger-soft: rgba(168, 62, 51, 0.10);
+  --info-soft: rgba(77, 103, 132, 0.10);
+
+  --st-working: #4d6784;
+  --st-waiting: #855c12;
+  --st-error: #a83e33;
+  --st-idle: #787e8a;   /* a quiet dot, still >= 3:1 on a panel */
+
+  --diff-add-bg: rgba(63, 140, 85, 0.13);
+  --diff-del-bg: rgba(190, 75, 60, 0.11);
+  --diff-add-text: #2d6a3e;
+  --diff-del-text: #9b3a2f;
+  --code-bg: rgba(11, 14, 26, 0.05);     /* Mantle --lg-sunk: a recess, not a box */
+
+  /* depth: Mantle's ink-tinted drop (--lg-shadow), no glow */
+  --shadow-1: 0 1px 1px rgba(14, 18, 38, 0.05), 0 2px 8px rgba(14, 18, 38, 0.06);
+  --shadow-2: 0 1px 1px rgba(14, 18, 38, 0.05), 0 10px 28px -12px rgba(14, 18, 38, 0.22);
+  --shadow-3: 0 1px 1px rgba(14, 18, 38, 0.05), 0 10px 28px -12px rgba(14, 18, 38, 0.22), 0 26px 56px -28px rgba(14, 18, 38, 0.30);
+  /* ink-tinted like the drops above: a black .3 under a white knob read as a smudge on a light panel */
+  --shadow-ctl: 0 1px 2px rgba(14, 18, 38, 0.14);
+  --shadow-ctl-tight: 0 1px 1px rgba(14, 18, 38, 0.14);
+  --shadow-knob: 0 0 0 0.5px rgba(14, 18, 38, 0.10), 0 1px 3px rgba(14, 18, 38, 0.20);
+  --focus-color: rgba(77, 103, 132, 0.62);
+  --focus-ring: inset 0 0 0 2px var(--focus-color), inset 0 0 0 3px rgba(255, 255, 255, 0.7);
+  --focus-ring-on-accent: inset 0 0 0 1px var(--accent), inset 0 0 0 3px var(--accent-text);
+
+  --scroll-thumb: rgba(11, 14, 26, 0.16);
+  --scroll-thumb-hover: rgba(11, 14, 26, 0.28);
+}
+
+/* theme-independent scale */
+:root {
+  --radius-xs: 4px;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  --fs-3xs: 10px;   /* count badges sitting on an icon, key caps: nothing else */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-s: 13px;
+  --fs-m: 14px;
+  --fs-l: 16px;
+  --fs-xl: 20px;
+  --lh: 1.5;
+
+  /* ---- elevation: ONE recipe per level (lane helm-premium, 2026-10-16) ----
+     Every level is a 1 px top lip (light catching the upper edge) plus that level's drop. A surface takes the
+     level of where it sits, not of what it is:
+       --elev-raised  inside a panel: cards, the composer card, deck tiles, the selected tab / rail button
+       --elev-panel   the window's own panels (sidebar, main column, inspector)
+       --elev-tip     small transient floats: tooltips
+       --elev-float   anything over the panels: menus, popovers, toasts, the find bar, dialogs, palette, sheets
+     (a modal is a float plus a scrim; the scrim, not a bigger shadow, says "modal"). */
+  --elev-lip: inset 0 1px 0 var(--hairline-inner);
+  --elev-raised: var(--elev-lip), var(--shadow-1);
+  --elev-panel: inset 0 1px 0 var(--panel-edge, var(--hairline-inner)), var(--shadow-2);   /* panels over the photo: shell.css's slightly brighter lip */
+  --elev-tip: var(--elev-lip), var(--shadow-2);   /* also the small pills over a scroller ("Jump to latest") */
+  --elev-float: var(--elev-lip), var(--shadow-3);
+
+  /* ---- type scale (one scale; nothing in the app sits between two steps) ----
+     3xs 10 count badges on an icon, key caps · 2xs 11 metadata, counts, chips · xs 12 secondary text ·
+     s 13 body UI · m 14 reading text · l 16 section titles, big numbers · xl 20 empty-state and page titles.
+     Outside the scale on purpose: Home's greeting (display, home.css) and 16 px phone inputs (iOS zooms the
+     page into anything smaller). Markdown headings and inline code are em-relative to the prose. Live numbers (clocks, costs, usage,
+     counts) use .tnum or font-variant-numeric: tabular-nums so a ticking value never shifts its neighbours. */
+
+  --dur: 120ms;
+  --dur-slow: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- shared motion: IDENTICAL in Mantle (glass-light.css), Quartz (tokens.css) and Helm (here) ----
+     Spec: next-week/motion-unison.md (2026-10-16). --m-spring is Mantle's bar load-in, the same 41 points
+     (ui/bar/bar.css, body.up --bar-move): a damped spring, damping ratio 0.8, 90% at 35% of the time, a 1.5%
+     overshoot that settles by itself. linear() runs over normalised time, so a shorter duration is the SAME
+     spring, only quicker: never re-sample it, only pick a duration.
+       --m-dur-xs  tooltips, chips, small menus      --m-dur-m  panels, sheets, dialogs
+       --m-dur-s   pop-ups, popovers, flyouts        --m-dur-l  whole-edge surfaces (bars, docks)
+     Leaving is about 45% of arriving, on --m-accel (a plain accelerate: leaving is not an event). Entry is a
+     short rise (6-12 px) or a scale from .96, plus a fade (--m-fade-in over ~40% of the time). Only transform
+     and opacity move; reduced motion is opacity only, 120 ms. */
+  --m-spring: linear(0, 0.0208, 0.0739, 0.1478, 0.2337, 0.3245, 0.4153, 0.5025, 0.5838, 0.6577, 0.7235,
+    0.7808, 0.8301, 0.8716, 0.906, 0.9341, 0.9566, 0.9742, 0.9876, 0.9977, 1.0049, 1.0098, 1.0128, 1.0145,
+    1.0151, 1.015, 1.0143, 1.0132, 1.012, 1.0106, 1.0092, 1.0079, 1.0066, 1.0055, 1.0044, 1.0035, 1.0028,
+    1.0021, 1.0015, 1.0011, 1);
+  --m-accel: cubic-bezier(.3, 0, .8, .15);
+  --m-fade-in: cubic-bezier(.2, 0, 0, 1);
+  --m-fade-out: cubic-bezier(.4, 0, 1, 1);
+  --m-dur-xs: 240ms;
+  --m-dur-s: 320ms;
+  --m-dur-m: 440ms;
+  --m-dur-l: 560ms;
+
+  /* the older names, now on the shared curve (the old spring overshot 3%, twice the cap) */
+  --ease-spring: var(--m-spring);
+  --dur-spring: var(--m-dur-xs);
+
+  /* layout */
+  --strip-h: 40px;            /* top drag strip */
+  --caption-w: 140px;         /* native min/max/close overlay, top-right */
+  --rail-w: 52px;
+  --sidebar-w: 272px;
+  --inspector-w: 360px;
+  --chat-max: 860px;
+  --tap: 44px;                /* phone touch target */
+
+  /* background photo (set from settings by the shell) */
+  --bg-blur: 28px;
+  --bg-dim: 0.45;
+}

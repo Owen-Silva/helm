@@ -1,0 +1,33 @@
+/* Quick-prompt box (main/quick.js opens it on the global hotkey). One opaque glass-toned
+   panel: the window itself is the card, so no backdrop blur and no animation.
+   Owner: lane host (B). */
+html, body, #quick { height: 100%; overflow: hidden; background: var(--surface-solid); }
+body { user-select: none; }
+
+.qp {
+  height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: var(--space-2, 8px);
+  padding: 12px 14px 10px;
+  /* no own border or radius: Windows 11 rounds this frameless window and draws its hairline + shadow */
+  background: var(--surface-solid);
+}
+
+.qp-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.qp-mark { color: var(--text-3); font-size: var(--fs-xs); letter-spacing: 0.04em; text-transform: uppercase; flex: none; }
+.qp-target { flex: 1; min-width: 0; max-width: 100%; }
+.qp-head .select { height: 28px; font-size: var(--fs-s); }
+
+.qp-input {
+  flex: 1; min-height: 0; width: 100%; box-sizing: border-box;
+  resize: none; user-select: text;
+  font-size: var(--fs-l, 15px); line-height: 1.45;
+}
+
+.qp-foot { display: flex; align-items: center; gap: 10px; min-height: 22px; font-size: var(--fs-xs); color: var(--text-3); }
+.qp-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qp-status.ok { color: var(--text-2); }
+.qp-status.err { color: var(--danger); }
+.qp-open { color: var(--accent-text, var(--accent)); text-decoration: none; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+.qp-open:hover { text-decoration: underline; }
+.qp-open:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 3px; }
+.qp-keys { display: flex; align-items: center; gap: 4px; flex: none; }

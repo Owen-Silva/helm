@@ -1,0 +1,37 @@
+{
+  "name": "helm",
+  "productName": "Helm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Helm: a desktop + phone command deck for Claude Code (runs the real claude CLI underneath)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "serve-ui": "node tools/serve-ui.js",
+    "vendor": "node tools/vendor.js",
+    "test:host": "node --test \"test/host/*.test.js\"",
+    "test:overlap": "node tools/overlap-audit.js",
+    "smoke": "node tools/host-smoke.js --capture=.shots/host-smoke.png",
+    "install-shortcut": "powershell -ExecutionPolicy Bypass -File bin/install-shortcut.ps1",
+    "make-exe": "node tools/make-exe.js",
+    "desktop-check": "node tools/desktop-check.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.293",
+    "@highlightjs/cdn-assets": "^11.12.0",
+    "@preact/signals": "^2.0.0",
+    "diff": "^7.0.0",
+    "dompurify": "^3.2.0",
+    "htm": "^3.1.1",
+    "marked": "^15.0.0",
+    "preact": "^10.26.0",
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "44.4.3",
+    "playwright-core": "1.63.0",
+    "rcedit": "5.0.2"
+  },
+  "license": "GPL-3.0-only"
+}

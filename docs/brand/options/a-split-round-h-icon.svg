@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c2d30"/>
+      <stop offset="1" stop-color="#1b1c1e"/>
+    </linearGradient>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#tile)"/>
+  <rect x="8.5" y="8.5" width="239" height="239" rx="53.5" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+  <path fill="#ecebe8" filter="url(#lift)" d="M145 78.857A52 52 0 0 1 145 177.143V141H111V177.143A52 52 0 0 1 111 78.857V115H145ZM145 53.926A76 76 0 0 1 145 202.074V187.624A62 62 0 0 0 145 68.376ZM111 202.074A76 76 0 0 1 111 53.926V68.376A62 62 0 0 0 111 187.624Z"/>
+</svg>

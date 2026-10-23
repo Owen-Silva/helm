@@ -1,0 +1,22 @@
+node_modules/
+*.log
+.shots/
+dist/
+ui/assets/backgrounds/wallpaper.png
+.serve-ui.log
+.dev-window.log
+.helm-run.log
+
+# Personal / machine-local files: never commit these
+local/
+.cloudtest-job/
+.claude/
+.env
+.env.*
+*.pem
+*.key
+token.txt
+/prod-guard.json
+/settings.json
+/backgrounds/
+/api-key.json

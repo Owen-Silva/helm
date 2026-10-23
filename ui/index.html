@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#141516">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Helm">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="/assets/icon-small.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>Helm</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "preact": "/vendor/preact.js",
+      "preact/hooks": "/vendor/preact-hooks.js",
+      "htm": "/vendor/htm.js",
+      "@preact/signals-core": "/vendor/signals-core.js",
+      "@preact/signals": "/vendor/signals.js",
+      "marked": "/vendor/marked.js",
+      "dompurify": "/vendor/purify.js",
+      "diff": "/vendor/diff.js",
+      "hljs": "/vendor/hljs.js",
+      "hljs-powershell": "/vendor/hljs-powershell.js"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/components.css">
+  <link rel="stylesheet" href="/shell/shell.css">
+  <link rel="stylesheet" href="/shell/tabs.css">
+  <link rel="stylesheet" href="/shell/settings.css">
+  <link rel="stylesheet" href="/chat/chat.css">
+  <link rel="stylesheet" href="/composer/composer.css">
+  <link rel="stylesheet" href="/panels/panels.css">
+  <link rel="stylesheet" href="/shell/phone.css">
+  <link rel="stylesheet" href="/deck/deck.css">
+  <link rel="stylesheet" href="/shell/presets.css">
+  <link rel="stylesheet" href="/shell/whats-new.css">
+  <link rel="stylesheet" href="/shell/header.css">
+  <link rel="stylesheet" href="/shell/home.css">
+  <link rel="stylesheet" href="/shell/handoff.css">
+  <link rel="stylesheet" href="/shell/worktrees.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/app.js"></script>
+  <script type="module" src="/lib/live.js"></script>
+  <script type="module" src="/shell/phone.js"></script>
+</body>
+</html>

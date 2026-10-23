@@ -1,0 +1,75 @@
+/* Worktrees (lane helm-worktrees, 2026-10-14; backlog H4): the New session dialog's worktree part and the
+   Worktrees panel. Tokens only (tokens.css), so light and dark follow the theme. */
+
+/* ---- New session: "Run it in its own git worktree" ---- */
+.wt-sec { border: 1px solid var(--hairline); border-radius: var(--radius-m); background: var(--surface-2); }
+.wt-sec.on { border-color: var(--accent-line); }
+.wt-toggle { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; cursor: pointer; }
+.wt-toggle input, .wt-check input { accent-color: var(--accent); width: 15px; height: 15px; margin: 2px 0 0; flex: none; cursor: pointer; }
+.wt-toggle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wt-toggle-title { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-s); font-weight: 500; color: var(--text); }
+.wt-toggle-sub { font-size: var(--fs-xs); color: var(--text-3); }
+.wt-body { display: flex; flex-direction: column; gap: 12px; padding: 2px 12px 12px 37px; }
+.wt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wt-name { display: flex; align-items: stretch; min-width: 0; }
+.wt-prefix { display: inline-flex; align-items: center; padding: 0 8px; font-size: var(--fs-xs); color: var(--text-3);
+  border: 1px solid var(--hairline); border-right: 0; border-radius: var(--radius-s, 6px) 0 0 var(--radius-s, 6px); background: var(--surface-3); }
+.wt-name .input { flex: 1; min-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; font-size: var(--fs-xs); }
+.wt-name .input[aria-invalid="true"] { border-color: var(--danger); }
+.wt-where { margin: -4px 0 0; font-size: var(--fs-2xs); color: var(--text-3); }
+.wt-deps { width: 100%; flex-wrap: wrap; height: auto; min-height: 30px; }
+.wt-deps > button { flex: 1 1 auto; white-space: nowrap; min-height: 24px; }
+.wt-deps > button:disabled { opacity: 0.45; cursor: not-allowed; }
+.wt-note { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+.wt-err { display: flex; align-items: flex-start; gap: 6px; margin: 0; font-size: var(--fs-s); color: var(--danger); }
+.wt-err .icon { flex: none; margin-top: 2px; }
+
+/* ---- the Worktrees panel ---- */
+.wt-panel { display: flex; flex-direction: column; gap: 12px; }
+.wt-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.wt-repo { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); }
+.wt-repo-name { font-weight: 600; color: var(--text); }
+.wt-repo .mono { font-size: var(--fs-2xs); }
+.wt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.wt-item { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-width: 0;
+  border: 1px solid var(--hairline); border-radius: var(--radius-m); background: var(--surface-2); }
+.wt-item.main { background: transparent; border-style: dashed; }
+.wt-item.confirming { border-color: var(--accent-line); }
+.wt-top { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.wt-id { flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.wt-name-l { font-size: var(--fs-s); font-weight: 600; color: var(--text); }
+.wt-branch { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--text-2); min-width: 0; }
+.wt-chip { font-size: var(--fs-2xs); padding: 1px 7px; }
+.wt-actions { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.wt-actions .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.wt-remove { color: var(--text-2); }
+@media (hover: hover) { .wt-remove:hover:not(:disabled) { color: var(--danger); } }
+.wt-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-xs); color: var(--text-2); min-width: 0; }
+.wt-commit { min-width: 0; max-width: 100%; }
+.wt-path { font-size: var(--fs-2xs); }
+.wt-sessions { display: flex; flex-wrap: wrap; gap: 6px; }
+.wt-sess { max-width: 260px; font-size: var(--fs-2xs); gap: 6px; }
+.wt-sess .dot { flex: none; }
+.wt-why { display: flex; align-items: flex-start; gap: 6px; margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+.wt-why .icon { flex: none; margin-top: 2px; }
+.wt-why.prot { color: var(--warn); }
+.wt-confirm { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; padding: 10px 12px;
+  border-radius: var(--radius-m); background: var(--surface-3); border: 1px solid var(--hairline); }
+.wt-confirm p { margin: 0; font-size: var(--fs-s); color: var(--text); overflow-wrap: anywhere; }
+.wt-confirm.danger { border-color: var(--danger); background: var(--danger-soft); }
+.wt-warn { display: flex; align-items: flex-start; gap: 6px; color: var(--warn) !important; }
+.wt-confirm.danger .wt-warn { color: var(--text) !important; }
+.wt-warn .icon { flex: none; margin-top: 3px; }
+.wt-check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-s); color: var(--text); cursor: pointer; flex-wrap: wrap; }
+.wt-check input { margin: 0; }
+.wt-confirm-btns { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.gp-wt { margin-top: 4px; align-self: flex-start; }
+
+/* phone and narrow windows: the row stacks, the actions go under the name */
+@media (max-width: 640px) {
+  .wt-row { grid-template-columns: 1fr; }
+  .wt-body { padding-left: 12px; }
+  .wt-top { flex-direction: column; align-items: stretch; }
+  .wt-actions { justify-content: flex-start; }
+  .wt-deps > button { flex: 1 1 100%; }
+}

@@ -1,0 +1,406 @@
+/* Component primitives. Owner: lane shell (C). Other lanes compose these; don't restyle them
+   locally, add a modifier in your own CSS instead. Sizes: controls are 30px tall (26px .sm),
+   44px on touch layouts (see the @media block at the bottom). */
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 30px; padding: 0 12px; min-width: 0;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-s); font-weight: 500; line-height: 1; white-space: nowrap;
+  box-shadow: inset 0 1px 0 var(--hairline-inner);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  user-select: none;
+}
+@media (hover: hover) { .btn:hover { background: var(--surface-3); border-color: var(--hairline-strong); } }
+.btn:active { background: var(--surface-2); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+.btn .icon { margin: 0 -1px; }
+.btn.sm, .btn-sm { height: 26px; padding: 0 9px; font-size: var(--fs-xs); gap: 5px; }
+.btn.lg, .btn-lg { height: 36px; padding: 0 16px; font-size: var(--fs-m); }
+.btn.block { width: 100%; }
+
+.btn-primary { background: var(--accent); border-color: transparent; color: var(--accent-text); box-shadow: var(--shadow-ctl); }
+@media (hover: hover) { .btn-primary:hover { background: var(--accent-strong); border-color: transparent; } }
+.btn-primary:active { background: var(--accent); }
+
+.btn-ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--text-2); }
+@media (hover: hover) { .btn-ghost:hover { background: var(--surface-3); border-color: transparent; color: var(--text); } }
+
+.btn-danger { background: var(--danger-soft); border-color: transparent; color: var(--danger); box-shadow: none; }
+@media (hover: hover) { .btn-danger:hover { background: var(--danger); color: var(--text-inverse); border-color: transparent; } }
+.btn-danger:active { background: var(--danger-soft); color: var(--danger); }   /* pressed = back to its own rest fill (as .btn-primary), not .btn grey */
+
+/* keyboard focus: each .btn variant sets its own resting box-shadow at the same specificity as base.css's
+   :focus-visible and loads later, so the shared inset ring is re-applied here (it was silently lost on every
+   .btn). On an accent fill the ring is drawn in the fill's text colour, 1 px in, or it would vanish. */
+.btn:focus-visible { box-shadow: var(--focus-ring); }
+.btn-primary:focus-visible { box-shadow: var(--focus-ring-on-accent), var(--shadow-ctl); }
+
+.icon-btn {
+  display: inline-grid; place-items: center; flex: none;
+  width: 30px; height: 30px; padding: 0;
+  border-radius: var(--radius-s); border: 1px solid transparent;
+  background: transparent; color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+@media (hover: hover) { .icon-btn:hover { background: var(--surface-3); color: var(--text); } }
+.icon-btn:active { background: var(--surface-2); }
+.icon-btn.sm { width: 24px; height: 24px; border-radius: var(--radius-xs); }
+.icon-btn.on, .icon-btn[aria-pressed="true"] { background: var(--surface-3); color: var(--text); border-color: var(--hairline); }
+.icon-btn:disabled { opacity: 0.45; pointer-events: none; }   /* disabled is .45 everywhere (Mantle --lg-disabled) */
+
+/* ---------- chips + badges ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; flex: none;
+  height: 24px; padding: 0 9px; max-width: 100%;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-xs); font-weight: 500; line-height: 1; white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+@media (hover: hover) { button.chip:hover, a.chip:hover { background: var(--surface-3); color: var(--text); border-color: var(--hairline-strong); text-decoration: none; } }
+.chip.on, .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--text); }
+.chip .icon { opacity: 0.85; }
+.chip.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.chip.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.chip.danger { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+.chip.info { color: var(--info); background: var(--info-soft); border-color: transparent; }
+
+.badge {
+  display: inline-grid; place-items: center; flex: none;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3); color: var(--text);
+  font-size: var(--fs-2xs); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.badge.accent { background: var(--accent); color: var(--accent-text); }
+.badge.warn { background: var(--warn); color: var(--text-inverse); }
+.badge.danger { background: var(--danger); color: var(--text-inverse); }
+.badge.ok { background: var(--ok); color: var(--text-inverse); }
+
+/* ---------- fields ---------- */
+.input, .textarea, .select {
+  width: 100%; min-width: 0;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--hairline);
+  background: var(--code-bg);
+  color: var(--text);
+  font-size: var(--fs-s);
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.input { height: 32px; padding: 0 10px; }
+.textarea { padding: 8px 10px; line-height: 1.5; resize: vertical; min-height: 72px; }
+.input::placeholder, .textarea::placeholder { color: var(--text-3); }
+@media (hover: hover) { .input:hover, .textarea:hover, .select:hover { border-color: var(--hairline-strong); } }
+.input:focus-visible, .textarea:focus-visible, .select:focus-visible,
+.input:focus, .textarea:focus, .select:focus { border-color: var(--accent-line); box-shadow: var(--focus-ring); border-radius: var(--radius-s); }
+.select {
+  appearance: none; height: 32px; padding: 0 30px 0 10px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999a98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.select option { background: var(--surface-solid); color: var(--text); }
+.input.sm, .select.sm { height: 26px; font-size: var(--fs-xs); }
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); }
+.hint { font-size: var(--fs-xs); color: var(--text-3); }
+
+/* range slider (settings blur/dim) */
+input[type="range"].range { appearance: none; width: 100%; height: 20px; background: transparent; cursor: pointer; }
+input[type="range"].range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--surface-3); }
+input[type="range"].range::-webkit-slider-thumb {
+  appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
+  background: var(--text); border: 0; box-shadow: var(--shadow-knob);
+}
+input[type="range"].range:focus-visible { box-shadow: none; }
+input[type="range"].range:focus-visible::-webkit-slider-thumb { box-shadow: var(--focus-ring); }
+
+/* ---------- segmented control ----------
+   <div class="seg"><button aria-pressed="true">Dark</button><button>Light</button></div> */
+.seg {
+  display: inline-flex; align-items: stretch; gap: 2px; flex: none;
+  padding: 2px; height: 30px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--hairline);
+  background: var(--code-bg);
+}
+.seg > button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 0 10px; min-width: 0;
+  border: 0; border-radius: calc(var(--radius-s) - 2px);
+  background: transparent; color: var(--text-2);
+  font-size: var(--fs-xs); font-weight: 500; white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+@media (hover: hover) { .seg > button:hover { color: var(--text); } }
+.seg > button[aria-pressed="true"], .seg > button.on {
+  background: var(--surface-3); color: var(--text);
+  box-shadow: var(--shadow-ctl), var(--elev-lip);
+}
+/* the pressed segment's lift shadow outranks base.css's :focus-visible. Focused, it trades the lift for the ring
+   (same specificity, later): the lift's 2 px blur reached the next segment across the 1-2 px gap */
+.seg > button:focus-visible { box-shadow: var(--focus-ring); }
+.seg.sm { height: 26px; }
+
+/* ---------- toggle switch ----------
+   <button class="toggle" role="switch" aria-checked="true"></button>
+   or <input type="checkbox" class="toggle"> */
+.toggle {
+  appearance: none; position: relative; flex: none;
+  width: 32px; height: 18px; padding: 0; margin: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-3);
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.toggle::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text-2);
+  box-shadow: var(--shadow-knob);
+  /* the knob travels on the shared spring (lands with weight, 1.5% overshoot = a fifth of a pixel here) */
+  transition: transform var(--m-dur-xs) var(--m-spring), background-color var(--dur) var(--ease);
+}
+@media (prefers-reduced-motion: reduce) { .toggle::after { transition: background-color var(--dur) var(--ease); } }
+.toggle[aria-checked="true"], .toggle:checked { background: var(--accent); border-color: transparent; }
+.toggle[aria-checked="true"]::after, .toggle:checked::after { transform: translateX(14px); background: var(--accent-text); }
+.toggle:focus-visible { border-radius: var(--radius-pill); }
+/* an off switch answers hover: stronger edge and knob (an on one already shows the accent) */
+@media (hover: hover) {
+  .toggle:not([aria-checked="true"]):not(:checked):not(:disabled):hover { border-color: var(--text-3); }
+  .toggle:not([aria-checked="true"]):not(:checked):not(:disabled):hover::after { background: var(--text); }
+}
+
+/* ---------- menus (small overlay: blur allowed) ---------- */
+.menu {
+  min-width: 180px; max-width: min(360px, calc(100vw - 24px));
+  padding: 4px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--hairline-strong);
+  background: var(--overlay);
+  -webkit-backdrop-filter: blur(24px) saturate(1.05);
+  backdrop-filter: blur(24px) saturate(1.05);
+  box-shadow: var(--elev-float);
+  color: var(--text);
+  font-size: var(--fs-s);
+  z-index: 60;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 30px; padding: 5px 10px;
+  border: 0; border-radius: var(--radius-s);
+  background: transparent; color: var(--text);
+  text-align: left; font-size: var(--fs-s);
+}
+.menu-item .icon { color: var(--text-2); }
+.menu-item.active, .menu-item[aria-selected="true"] { background: var(--surface-3); }
+@media (hover: hover) { .menu-item:hover { background: var(--surface-3); } }
+.menu-item:active { background: var(--surface-2); }   /* pressed: a fill step, never a scale (as .btn / .icon-btn) */
+.menu-item.danger { color: var(--danger); }
+.menu-item.danger .icon { color: var(--danger); }
+.menu-item .menu-hint { margin-left: auto; color: var(--text-3); font-size: var(--fs-xs); }
+/* keyboard focus inside a menu = the hover highlight, not a ring */
+.menu-item:focus-visible { box-shadow: none; background: var(--surface-3); }
+/* optional second line under a menu item's label, and a right-hand check for the chosen option */
+.menu-desc { display: block; margin-top: 1px; font-size: var(--fs-xs); line-height: 1.3; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-check { display: inline-grid; place-items: center; width: 15px; flex: none; }
+.menu-check .icon, .menu-item .menu-check .icon { color: var(--accent); }
+.menu-item:disabled { opacity: 0.45; pointer-events: none; }
+.menu-sep { height: 1px; margin: 4px 6px; background: var(--hairline); }
+.menu-label { padding: 6px 10px 4px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
+
+/* ---------- card ---------- */
+.card {
+  border-radius: var(--radius-m);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  box-shadow: var(--elev-raised);
+}
+.card.flat { box-shadow: none; }
+.card-head { display: flex; align-items: center; gap: var(--space-2); padding: 10px 12px; border-bottom: 1px solid var(--hairline); }
+.card-body { padding: 12px; }
+
+/* ---------- kbd ---------- */
+.kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--hairline-strong);
+  border-bottom-width: 2px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 500 var(--fs-2xs)/1 var(--font);
+  white-space: nowrap;
+}
+
+/* ---------- status dot ----------
+   <span class="dot working"></span>  working | waiting | error | idle | closed */
+.dot {
+  display: inline-block; flex: none;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--st-idle);
+}
+.dot.working { background: var(--st-working); }
+.dot.waiting { background: var(--st-waiting); }
+.dot.error { background: var(--st-error); }
+.dot.idle { background: transparent; box-shadow: inset 0 0 0 1.5px var(--st-idle); }
+.dot.closed { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-3); opacity: 0.6; }
+.dot.ok { background: var(--ok); }
+/* working: a slow stepped breath, not a glow and not continuous motion. Pulse: NO CSS animation here.
+   An infinite animation (even steps()) made the compositor draw ~60 frames/s for one 8 px dot (~4% of a
+   core); ui/shell/sidebar.js flips html[data-pulse] every 800 ms instead, only while a live dot is shown. */
+html[data-pulse="1"] .dot.working.live { opacity: 0.55; }
+
+/* ---------- tooltip ----------
+   Explicit: <div class="tooltip">text</div> (positioned by its owner)
+   Attribute: <button data-tip="Copy">…</button>  (data-tip-pos="bottom|left|right" optional) */
+.tooltip {
+  padding: 5px 8px; max-width: 280px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: var(--fs-xs); line-height: 1.35;
+  box-shadow: var(--elev-tip);
+  pointer-events: none; z-index: 80;
+}
+[data-tip] { position: relative; }
+[data-tip]:hover::after, [data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+  padding: 4px 8px; white-space: nowrap;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-solid); color: var(--text);
+  font: 500 var(--fs-xs)/1.3 var(--font);
+  box-shadow: var(--elev-tip);
+  pointer-events: none; z-index: 80;
+}
+[data-tip][data-tip-pos="bottom"]:hover::after, [data-tip][data-tip-pos="bottom"]:focus-visible::after { bottom: auto; top: calc(100% + 6px); }
+[data-tip][data-tip-pos="right"]:hover::after, [data-tip][data-tip-pos="right"]:focus-visible::after { left: calc(100% + 8px); bottom: auto; top: 50%; transform: translateY(-50%); }
+[data-tip][data-tip-pos="left"]:hover::after, [data-tip][data-tip-pos="left"]:focus-visible::after { left: auto; right: calc(100% + 8px); bottom: auto; top: 50%; transform: translateY(-50%); }
+/* the entry (after a 450 ms hover delay) is in the motion block at the end of this file */
+
+/* ---------- spinner (stepped: 8 ticks, jumps a tick at a time) ----------
+   <span class="spinner"></span>   .sm = 12px, .lg = 20px; colour = currentColor */
+.spinner {
+  display: inline-block; flex: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  color: var(--text-2);
+  background: repeating-conic-gradient(from -11deg, currentColor 0 22deg, transparent 22deg 45deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)), conic-gradient(rgba(0, 0, 0, 0.15), #000);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)), conic-gradient(rgba(0, 0, 0, 0.15), #000);
+  mask-composite: intersect;
+}
+.spinner.sm { width: 12px; height: 12px; }
+.spinner.lg { width: 20px; height: 20px; }
+/* ticks come from html[data-spin] (ui/shell/sidebar.js pulse clock, 250 ms, only while a spinner is shown)
+   rather than an infinite animation, which kept the compositor at ~60 frames/s */
+html[data-spin="1"] .spinner { transform: rotate(45deg); }
+html[data-spin="2"] .spinner { transform: rotate(90deg); }
+html[data-spin="3"] .spinner { transform: rotate(135deg); }
+html[data-spin="4"] .spinner { transform: rotate(180deg); }
+html[data-spin="5"] .spinner { transform: rotate(225deg); }
+html[data-spin="6"] .spinner { transform: rotate(270deg); }
+html[data-spin="7"] .spinner { transform: rotate(315deg); }
+
+/* ---------- misc ---------- */
+.divider { height: 1px; background: var(--hairline); border: 0; margin: 0; }
+.section-label { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
+.empty-note { color: var(--text-3); font-size: var(--fs-s); text-align: center; padding: var(--space-5) var(--space-4); }
+
+/* ---------- touch layouts: 44px targets ---------- */
+@media (max-width: 820px), (pointer: coarse) {
+  .btn { height: 40px; padding: 0 14px; font-size: var(--fs-m); }
+  .btn.sm, .btn-sm { height: 34px; }
+  .icon-btn { width: var(--tap); height: var(--tap); }
+  .icon-btn.sm { width: 36px; height: 36px; }
+  .input, .select { height: 40px; font-size: var(--fs-l); }
+  .textarea { font-size: var(--fs-l); }
+  .menu-item { min-height: var(--tap); font-size: var(--fs-m); }
+  .seg { height: var(--tap); }
+  .chip { height: 28px; }
+  /* small controls keep their look but get a 44px hit area (an invisible ::before; no layout change) */
+  .icon-btn.sm { position: relative; }
+  .icon-btn.sm::before { content: ""; position: absolute; inset: -4px; }
+  .toggle { width: 40px; height: 24px; }
+  .toggle::after { width: 18px; height: 18px; }
+  .toggle[aria-checked="true"]::after, .toggle:checked::after { transform: translateX(16px); }
+  .toggle::before { content: ""; position: absolute; inset: -11px -4px; }
+  input[type="range"].range { height: var(--tap); }
+  input[type="range"].range::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -9px; }
+  [data-tip]:hover::after { display: none; }
+}
+
+/* light: inputs inside panels are white .70 + panel (look-sync CONTRACT "Light look"), not dark's ink recess.
+   background-color only: .select keeps its chevron background-image */
+html[data-theme="light"] :is(.input, .textarea, .select) { background-color: var(--surface-2); }
+html[data-theme="light"] input[type="range"].range::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 0 1px rgba(11, 14, 26, 0.18), 0 1px 3px rgba(14, 18, 38, 0.18); }
+html[data-theme="light"] input[type="range"].range:focus-visible::-webkit-slider-thumb { box-shadow: var(--focus-ring), 0 1px 3px rgba(14, 18, 38, 0.18); }   /* the light thumb rule above outranked the focus ring */
+/* light theme: the .modal glass (--overlay at 95% + blur, shell.css) let a busy page show through faintly behind
+   sheets (What's new, shortcuts). Sheets go opaque in light; dark keeps its glass. */
+html[data-theme="light"] .modal { background: var(--surface-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ---------- motion (lane helm-unison, 2026-10-16; spec next-week/motion-unison.md) ----------
+   One vocabulary for everything that appears or leaves, the same in Mantle, Quartz and Helm. The curves and
+   durations are the shared --m-* tokens (tokens.css). Entry = the spring on transform (a scale from .96 at the
+   anchor, or a 6-12 px rise) + a fade over 40% of the time; exit (lib/motion.js leaveRef) = ~45% of the entry
+   on --m-accel. Keyframes give only the far end, so each surface lands on its own resting values and an
+   interrupted entry leaves from wherever it had got to. Only transform (scale / translate) and opacity move:
+   never blur, backdrop-filter, size or layout. A surface inside a scrim moves; the scrim alone fades it, so
+   nothing fades twice. */
+@keyframes m-in-fade { from { opacity: 0; } }
+@keyframes m-in-pop { from { scale: 0.96; } }
+@keyframes m-in-rise { from { translate: 0 var(--m-rise, 8px); } }
+@keyframes m-out-fade { to { opacity: 0; } }
+@keyframes m-out-pop { to { scale: 0.98; } }
+@keyframes m-out-sink { to { translate: 0 var(--m-rise, 8px); } }
+
+/* the leaving copy (lib/motion.js): inert, out of the hit-test, its own entry animations stopped */
+.m-leave { pointer-events: none !important; }
+.m-leave * { animation: none !important; }
+.m-out-xs { --m-out: calc(var(--m-dur-xs) * 0.45); }
+.m-out-s { --m-out: calc(var(--m-dur-s) * 0.45); }
+.m-out-m { --m-out: calc(var(--m-dur-m) * 0.45); }
+.m-out-l { --m-out: calc(var(--m-dur-l) * 0.45); }
+/* :not(#m) lifts these over any entry rule on the same element without !important, so a test that freezes animations
+   (overlap-audit FREEZE: * { animation-duration: 0s !important }) still ends a leaving copy at once */
+.m-leave-fade:not(#m) { animation: m-out-fade var(--m-out) var(--m-fade-out) both; }
+.m-leave-pop:not(#m) { animation: m-out-pop var(--m-out) var(--m-accel) both, m-out-fade var(--m-out) var(--m-fade-out) both; }
+.m-leave-drop:not(#m) { animation: m-out-sink var(--m-out) var(--m-accel) both, m-out-fade var(--m-out) var(--m-fade-out) both; }
+/* the card inside a leaving scrim: the scrim fades, the card only moves */
+.m-leave > :is(.modal, .palette, .pn-modal), .m-leave.lightbox > img { animation: m-out-pop var(--m-out) var(--m-accel) both !important; }
+.m-leave > .sheet { animation: m-out-sink var(--m-out) var(--m-accel) both !important; }
+
+/* menus (small): a scale from the corner nearest the trigger (Menu sets --m-origin) */
+.menu {
+  transform-origin: var(--m-origin, 50% 0);
+  animation: m-in-pop var(--m-dur-xs) var(--m-spring) both, m-in-fade calc(var(--m-dur-xs) * 0.4) var(--m-fade-in) both;
+}
+/* tooltips: the same, after the 450 ms hover delay, from the edge that points at the control */
+[data-tip]:hover::after, [data-tip]:focus-visible::after {
+  transform-origin: 50% 100%;
+  animation: m-in-pop var(--m-dur-xs) var(--m-spring) 450ms both, m-in-fade calc(var(--m-dur-xs) * 0.4) var(--m-fade-in) 450ms both;
+}
+[data-tip][data-tip-pos="bottom"]:hover::after, [data-tip][data-tip-pos="bottom"]:focus-visible::after { transform-origin: 50% 0; }
+[data-tip][data-tip-pos="right"]:hover::after, [data-tip][data-tip-pos="right"]:focus-visible::after { transform-origin: 0 50%; }
+[data-tip][data-tip-pos="left"]:hover::after, [data-tip][data-tip-pos="left"]:focus-visible::after { transform-origin: 100% 50%; }
+
+/* reduced motion: nothing moves; arrivals and exits are a 120 ms fade (base.css zeroes everything else) */
+@media (prefers-reduced-motion: reduce) {
+  .menu, .toast, .handoff-card, .msg-acts-menu, .modal-scrim, .pn-modal-scrim, .sheet-scrim, .cmp-scrim, .lightbox, .app.desktop .insp-body,
+  [data-tip]:hover::after, [data-tip]:focus-visible::after { animation: m-in-fade 120ms var(--m-fade-in) both !important; }
+  [data-tip]:hover::after, [data-tip]:focus-visible::after { animation-delay: 450ms !important; }
+  :is(.modal-scrim, .pn-modal-scrim, .sheet-scrim) > *, .lightbox > img { animation: none !important; }
+  .m-leave-fade, .m-leave-pop, .m-leave-drop { animation: m-out-fade 120ms var(--m-fade-out) both !important; }
+  .m-leave > *, .m-leave > :is(.modal, .palette, .pn-modal, .sheet), .m-leave.lightbox > img { animation: none !important; }   /* same weight as the card exits above, later: wins */
+}

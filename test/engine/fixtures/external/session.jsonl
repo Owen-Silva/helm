@@ -1,0 +1,2 @@
+{"type":"user","isSidechain":false,"message":{"role":"user","content":"Fix the login page"},"uuid":"u1","timestamp":"2026-10-08T00:00:00.000Z","cwd":"C:\\work\\shop","sessionId":"x"}
+{"type":"assistant","message":{"id":"m1","role":"assistant","content":[{"type":"text","text":"On it."}]},"uuid":"a1","timestamp":"2026-10-08T00:00:05.000Z","cwd":"C:\\work\\shop"}

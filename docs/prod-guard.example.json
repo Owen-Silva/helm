@@ -1,0 +1,14 @@
+{
+  "repos": [
+    {
+      "name": "My App",
+      "remotes": ["github.com/your-org/your-app"],
+      "branches": ["main"]
+    },
+    {
+      "name": "Client Portal",
+      "remotes": ["git@github.com:your-org/client-portal.git"],
+      "branches": null
+    }
+  ]
+}

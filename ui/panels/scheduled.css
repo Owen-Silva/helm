@@ -1,0 +1,85 @@
+/* Scheduled (lane sched, 2026-10-09): the Queue panel's "Scheduled in sessions" section (./scheduled.js) and the Home
+   "Next up" card (../shell/next-up.js). Loaded via panels.css so neither flashes unstyled. Neutral glass, hairline
+   rows, colour for state only (amber "still scheduled", muted "ended"). No blur on the Home list: it can be 4 rows. */
+
+/* ---------- panel section ---------- */
+.sch { border-bottom: 1px solid var(--hairline); }
+.sch .sch-note { margin: 0 var(--space-3) var(--space-1); padding: 0; border: 0; background: none; font-size: var(--fs-xs); color: var(--text-3); }
+.sch-clock { margin-left: 6px; font-weight: 400; font-size: var(--fs-xs); color: var(--text-2); }
+.sch-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
+.sch-row { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 10px var(--space-3) 8px; }
+.sch-row + .sch-row { border-top: 1px solid var(--hairline); }
+.sch-top { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--fs-xs); color: var(--text-3); }
+.sch-kind { flex: none; color: var(--text-2); font-weight: 600; }
+.sch-rep { flex: none; padding: 0 6px; border: 1px solid var(--hairline); border-radius: var(--radius-pill); font-size: var(--fs-2xs); line-height: 16px; color: var(--text-2); }
+.sch-when { flex: none; margin-left: auto; font-size: var(--fs-s); color: var(--text); font-weight: 600; }
+.sch-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-s); color: var(--text); }
+.sch-meta { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
+.sch-meta > * { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sch-meta > .sch-sess { flex: 0 1 auto; }
+.sch-meta > .sch-dot-sep { flex: 0 3 auto; }
+.sch-dot-sep::before { content: "·"; margin-right: 6px; opacity: 0.6; }
+.sch-sess { padding: 0; border: 0; background: none; font: inherit; color: var(--text-2); cursor: pointer; text-align: left; white-space: nowrap; }
+@media (hover: hover) { .sch-sess:hover { color: var(--text); text-decoration: underline; text-underline-offset: 2px; } }
+.sch-sess:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 3px; }
+.sch-asked { font-size: var(--fs-xs); color: var(--text-2); }
+.sch-asked.t-warn { color: var(--warn); }
+.sch-actions { margin-top: 2px; }
+.sch-actions .btn[disabled] { opacity: 0.45; }
+.sch-ended .sch-label, .sch-ended .sch-kind { color: var(--text-2); }
+.sch-why { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.sch-ended.why-restart .sch-why, .sch-ended.why-exited .sch-why { color: var(--warn); }
+.sch-ended .sch-when { font-weight: 400; font-size: var(--fs-xs); color: var(--text-3); }
+.sch-x { flex: none; width: 22px; height: 22px; margin-right: -4px; }
+.sch-confirm-p { margin: 0 0 var(--space-2); font-size: var(--fs-s); color: var(--text); line-height: var(--lh); }
+.sch-confirm-p.sch-dim { color: var(--text-2); font-size: var(--fs-xs); }
+.sch-quote {
+  margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--hairline-strong); background: var(--surface-1); border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  font-size: var(--fs-s); color: var(--text); line-height: var(--lh); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.sch-confirm-list { margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--fs-s); color: var(--text); }
+.sch-confirm-list li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sch-dialog { min-height: 0; }
+
+/* ---------- Home: Next up ---------- */
+.nextup-label { margin-top: 36px; }
+.nextup-list {
+  list-style: none; margin: 0; padding: 0;
+  border-radius: var(--radius-l); border: 1px solid var(--home-edge, var(--hairline));
+  background: rgb(var(--home-scrim, 0 0 0) / 0.66); overflow: hidden;
+}
+.nextup-li + .nextup-li { border-top: 1px solid var(--home-edge, var(--hairline)); }
+.nextup-row {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-width: 0;
+  padding: 10px 14px; border: 0; background: transparent;
+  color: var(--text); text-align: left; font: inherit; cursor: pointer;
+  transition: background-color var(--dur) var(--ease);
+}
+@media (hover: hover) { .nextup-row:hover { background: rgb(var(--home-scrim, 0 0 0) / 0.35); } }
+.nextup-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nextup-main { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.nextup-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-m); font-weight: 600; }
+.nextup-sub { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
+.nextup-kind { flex: none; }
+.nextup-sess { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nextup-sess::before { content: "·"; margin-right: 6px; opacity: 0.6; }
+.nextup-when { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.nextup-count { font-size: var(--fs-m); font-weight: 600; color: var(--text); }
+.nextup-clock { font-size: var(--fs-xs); color: var(--text-2); }
+.nextup-row.asked .nextup-count { color: var(--text-2); font-weight: 500; }
+.nextup-lost .nextup-kind { color: var(--warn); font-weight: 600; }
+.nextup-lost .nextup-title { font-weight: 500; color: var(--text-2); }
+.nextup-more {
+  margin-top: 8px; padding: 2px 4px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-s); color: var(--text); text-shadow: var(--home-shadow, none);
+}
+@media (hover: hover) { .nextup-more:hover { text-decoration: underline; text-underline-offset: 2px; } }
+.nextup-more:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
+
+@media (max-width: 820px) {
+  .app.phone .nextup-label { margin-top: 28px; }
+  .app.phone .nextup-row { padding: 10px 12px; gap: 10px; }
+  .app.phone .nextup-title { font-size: var(--fs-s); }
+  .app.phone .nextup-count { font-size: var(--fs-s); }
+}

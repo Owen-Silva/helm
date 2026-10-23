@@ -1,0 +1,45 @@
+/* ---------- session header status bar (lane header, 2026-10-08) ----------
+   The user asked: "all the info i need like how many agents are running, estimated time etc. up here and always visible".
+   Line 2 of the session header (ui/shell/header.js SessionLine) is the session's status bar: lead (what it is
+   doing / waiting / idle) · clock | agents | time left · step | todos | tasks | context | folder | git.
+   Extends the "session header, line 2" block in shell.css (loaded first): the fitting, separators and popover
+   live there; this file adds the new pieces and the phone layout. Neutral greys, hairlines, no glow. */
+
+.sh-info > .sh-agents, .sh-info > .sh-todo, .sh-info > .sh-tasks, .sh-info > .sh-ctx { gap: 5px; }
+.sh-info > .sh-agents > svg, .sh-info > .sh-todo > svg, .sh-info > .sh-tasks > svg, .sh-info > .sh-ctx > svg { flex: none; opacity: 0.8; }
+/* the live counts read one step stronger than place (folder, git); context and tasks stay quiet */
+.sh-info > .sh-agents, .sh-info > .sh-todo { color: var(--text-2); }
+/* nothing running: the lead and its "last turn 4m ago" stay in the quiet grey */
+.sh-info > .sh-state.st-idle, .sh-info > .sh-state.st-closed, .sh-info > .sh-ago { color: var(--text-3); }
+/* short forms for any piece (shell.css covers the lead): header.js fitLine sets [data-compact] only when the
+   full form would cost an always-wanted piece ("~14 min left" -> "~14m left") */
+.sh-info > .sh-i:not(.sh-state) .sh-short, .sh-info > .sh-i:not(.sh-state)[data-compact] .sh-long { display: none; }
+.sh-info > .sh-i:not(.sh-state)[data-compact] .sh-short { display: block; }
+/* ticking numbers keep their width: tabular digits (.tnum) everywhere a count or clock changes */
+.sh-info > .sh-clock { font-variant-numeric: tabular-nums; }
+
+/* agents at or past the 32% context hand-off (lane ctxwarn): amber; red once one passes the 40% ceiling.
+   Text colour only, the existing --warn / --danger tokens, no glow */
+.sh-info > .sh-ctxwarn { gap: 5px; color: var(--warn); }
+.sh-info > .sh-ctxwarn.danger { color: var(--danger); }
+.sh-info > .sh-ctxwarn > svg { flex: none; }
+.sh-pop .gp-cw.warn { color: var(--warn); }
+.sh-pop .gp-cw.danger { color: var(--danger); }
+
+/* details popover: the running agents, one per line */
+.sh-pop .gp-agent { display: flex; gap: 6px; min-width: 0; }
+.sh-pop .gp-agent > .truncate { min-width: 0; flex: 0 1 auto; }
+.sh-pop .gp-agent > .gp-dim { flex: none; }
+
+/* ---- phone: the status bar takes the header's full width on its own row under the title row ----
+   (desktop is untouched: everything below is inside the phone breakpoint and .app.phone) */
+@media (max-width: 820px) {
+  /* the second row costs height: take some back from the header's own padding (title row = the 44px buttons).
+     The status row starts under the buttons, not 4px up into them (lane helm-overlap); same total height. */
+  .app.phone .sess-head.sh-bar { flex-wrap: wrap; row-gap: 0; padding-top: 0; padding-bottom: 3px; }
+  .app.phone .sess-head.sh-bar > .sh-main { display: contents; }
+  .app.phone .sess-head.sh-bar .sh-line1 { flex: 1 1 0; min-width: 0; padding-right: 2px; }   /* the title's -6px hover margin reached 2px past the 4px gap, under the first action */
+  .app.phone .sess-head.sh-bar .sh-line2 { order: 2; flex: 1 0 100%; margin-top: 0; padding: 0 2px 0 12px; }
+  /* shell.css grows the tap target 9px down; with less padding below, stop it at the header's edge */
+  .app.phone .sess-head.sh-bar .sh-info::after { inset: 0 -4px -3px; }   /* not up into the 44px buttons */
+}

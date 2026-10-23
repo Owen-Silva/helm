@@ -1,0 +1,10 @@
+{
+  "_": "Known, reasoned exceptions for tools/overlap-audit.js. Each entry: kind, sel (substring of either selector), optional scenario / width / with, and a reason. No reason, no exception.",
+  "allow": [
+    { "kind": "overlap", "sel": "pn-fi-row", "with": "icon-btn.sm", "reason": "Files panel: the trailing Add button sits over the row's right end by design; the row's meta fades out under it on hover and the row reserves 40px for it on the phone" },
+    { "kind": "overlap", "sel": "trow-line", "with": "msg-act", "width": 1280, "reason": "Tool rows (desktop): the copy button appears over the row's right end on hover / keyboard focus by design; the time and flag step 26px aside for it, and the phone hides it" },
+    { "kind": "no-focus-style", "sel": "menu-item", "reason": "Menu and palette rows show keyboard position as the row highlight (.active / aria-selected, the same surface as :focus-visible); only the already-highlighted row can be reported, and it is already marked" },
+    { "kind": "overlap", "sel": "pn-fi-search-ico", "reason": "Files search: the magnifier glyph sits inside the field by design (pointer-events: none; the input pads 26px for it)" },
+    { "kind": "no-focus-style", "sel": "input.range", "reason": "Sliders draw the focus ring on ::-webkit-slider-thumb (dark and light), which the probe's computed-style signature cannot read" }
+  ]
+}

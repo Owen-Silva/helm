@@ -1,0 +1,246 @@
+/* Home screen (lane home, 2026-10-08): ui/shell/home.js. Owner: lane shell (C).
+   The wallpaper shows unblurred: chrome.js Background adds .bg-clear (no filter) over the blurred .bg-photo and the
+   blurred layer is hidden once it is covered. Only opacity / transform animate, once per transition, so Home costs
+   no frames while it sits there. Legibility over ANY wallpaper: a top scrim behind the tab bar, a text shadow on
+   the greeting, and small frosted chips / cards that blur only their own area (never the whole wallpaper; tall
+   blurred cards drop raster tiles, so cards stay short). Phone-only rules are inside the 820px media query. */
+
+html[data-theme="dark"] {
+  --home-glass: rgba(14, 15, 16, 0.5);
+  --home-glass-hover: rgba(24, 25, 27, 0.62);
+  --home-edge: rgba(255, 255, 255, 0.1);
+  --home-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 18px rgba(0, 0, 0, 0.38);
+  --home-scrim: 9 10 11;
+}
+html[data-theme="light"] {
+  --home-glass: rgba(255, 255, 255, 0.72);
+  --home-glass-hover: rgba(255, 255, 255, 0.82);
+  --home-edge: rgba(11, 14, 26, 0.10);
+  --home-shadow: 0 1px 2px rgba(255, 255, 255, 0.6), 0 2px 14px rgba(255, 255, 255, 0.4);   /* a soft lift off the photo, not a glow */
+  --home-scrim: 255 255 255;
+}
+
+/* ---------- wallpaper: the unblurred copy ---------- */
+.bg-clear {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  /* motion (shared tokens): the clear copy fades in while it settles from 1.015 on the spring; it fades out as a leave */
+  animation: m-in-fade calc(var(--m-dur-s) * 0.6) var(--m-fade-in) both, home-bg-settle var(--m-dur-s) var(--m-spring) both;
+}
+.bg-clear.out { animation: m-out-fade calc(var(--m-dur-s) * 0.45) var(--m-fade-out) both; }
+/* lined up: .bg-clear keeps the fade (and the scrim below) and carries no picture itself; its monitor-sized child
+   holds the photo under the same translate3d as the blurred layer (shell.css .bg-lined) */
+.bg-clear-img { background-size: cover; background-position: center; }
+@keyframes home-bg-settle { from { scale: 1.015; } }
+/* the blurred layer is fully covered on Home: stop drawing it (and its full-screen blur) once the fade is done */
+.app.on-home .bg-photo { visibility: hidden; transition: visibility 0s linear 320ms; }
+/* a soft scrim under the tab bar so tabs, search and the update chip read over bright photos */
+.app.desktop .bg-clear::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 96px;
+  background: linear-gradient(rgb(var(--home-scrim) / 0.5), rgb(var(--home-scrim) / 0));
+}
+
+/* ---------- the logo: Home ---------- */
+.rail-home {
+  width: 44px; padding: 0; border: 0; border-radius: var(--radius-m);
+  background: transparent; cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: color var(--dur) var(--ease);
+}
+@media (hover: hover) { .rail-home:hover { color: var(--text); } }
+.rail-home:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.rail-home.on { color: var(--text); }
+
+/* ---------- desktop: everything but the top bar steps aside ---------- */
+.app.desktop.on-home .rail > :not(.rail-home) { visibility: hidden; opacity: 0; pointer-events: none; }
+/* the way to Home is a leave (HOME_TO_MS = --m-dur-s x .45, --m-accel); the way back an arrival (HOME_FROM_MS = --m-dur-s:
+   transform on --m-spring, the fade over the first 40%). Size class s, not m: the panels only travel 8-20 px, and
+   the whole layout moving at once is costlier per frame than one panel (helm-motion2 trace) */
+.app.fx-to-home .rail > :not(.rail-home) { animation: home-rail-out calc(var(--m-dur-s) * 0.45) var(--m-accel) both; pointer-events: none; }
+.app.fx-from-home .rail > :not(.rail-home) { animation: home-rail-in var(--m-dur-s) var(--m-spring) both, m-in-fade calc(var(--m-dur-s) * 0.4) var(--m-fade-in) both; }
+@keyframes home-rail-out { to { opacity: 0; translate: -8px 0; } }
+@keyframes home-rail-in { from { translate: -8px 0; } }
+
+.app.fx-to-home .deck { pointer-events: none; }
+.app.fx-to-home .deck > * { animation: home-panel-out calc(var(--m-dur-s) * 0.45) var(--m-accel) both; }
+.app.fx-to-home .deck > .sidebar { animation-name: home-side-out; }
+.app.fx-to-home .deck > .insp-col { animation-name: home-insp-out; }
+.app.fx-from-home .deck > * { animation: home-panel-in var(--m-dur-s) var(--m-spring) both, m-in-fade calc(var(--m-dur-s) * 0.4) var(--m-fade-in) both; }
+.app.fx-from-home .deck > .sidebar { animation-name: home-side-in, m-in-fade; }
+.app.fx-from-home .deck > .insp-col { animation-name: home-insp-in, m-in-fade; }
+@keyframes home-panel-out { to { opacity: 0; translate: 0 12px; scale: 0.985; } }
+@keyframes home-side-out { to { opacity: 0; translate: -20px 0; } }
+@keyframes home-insp-out { to { opacity: 0; translate: 20px 0; } }
+@keyframes home-panel-in { from { translate: 0 12px; scale: 0.985; } }
+@keyframes home-side-in { from { translate: -20px 0; } }
+@keyframes home-insp-in { from { translate: 20px 0; } }
+
+/* ---------- Home content ---------- */
+.home {
+  position: relative; z-index: 1; min-height: 0; min-width: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.app.desktop > .home { grid-column: 2; grid-row: 2; padding: 0 24px 24px 0; }
+.home-inner {
+  max-width: 960px; margin: 0 auto;
+  padding: clamp(28px, 11vh, 128px) 8px 24px;
+  animation: home-in var(--m-dur-s) var(--m-spring) both, m-in-fade calc(var(--m-dur-s) * 0.4) var(--m-fade-in) both;
+}
+@keyframes home-in { from { translate: 0 10px; } }
+
+.home-greet {
+  font: 600 44px/1.1 var(--font-display); letter-spacing: -0.015em;
+  color: var(--text); text-shadow: var(--home-shadow);
+}
+.home-when {
+  margin-top: 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  font-size: var(--fs-l); color: var(--text); text-shadow: var(--home-shadow);
+}
+.home-clock { font-weight: 600; }
+.home-date { opacity: 0.86; }
+
+.home-glance { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px; }
+.hchip {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 30px; padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--home-glass); border: 1px solid var(--home-edge);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1);
+  font-size: var(--fs-s); color: var(--text); white-space: nowrap;
+}
+.hchip.stale .hchip-v { opacity: 0.55; } /* lane accuracy: a 30+ min old usage reading */
+.hchip-k { color: var(--text-2); }
+.hchip-v { font-weight: 600; }
+.hchip .dot { flex: none; }
+.hchip.warn .hchip-v, .hchip.warn .hchip-k { color: var(--st-waiting); }
+/* 5-hour pace (lane pace): under / on / early read as plain text; hot and at-the-limit go amber. No glow. */
+.hchip-pace { max-width: 100%; min-width: 0; }
+.hchip-pace .hchip-k { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hchip-pace.pace-warn .hchip-v, .hchip-pace.pace-warn .hchip-k { color: var(--warn); }
+
+.home-label {
+  margin: 40px 0 12px; font-size: var(--fs-s); font-weight: 600;
+  color: var(--text); text-shadow: var(--home-shadow);
+}
+.home-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 10px; }
+.hcard {
+  position: relative;
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 0;
+  min-height: 92px; padding: 12px 14px 11px;
+  border-radius: var(--radius-l);
+  background: var(--home-glass); border: 1px solid var(--home-edge);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1);
+  color: var(--text); text-align: left; font: inherit; cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+@media (hover: hover) { .hcard:hover { background: var(--home-glass-hover); border-color: var(--hairline-strong); } }
+.hcard:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.hcard-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hcard-head .dot { flex: none; }
+.hcard-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-m); font-weight: 600; }
+.hcard-proj { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 16px; font-size: var(--fs-xs); color: var(--text-2); }
+.hcard-line {
+  margin-top: auto; padding: 6px 0 0 16px;
+  display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap;
+  font-size: var(--fs-s); color: var(--text-2);
+}
+/* narrow cards: the lead ("Running npm test") gives way first and the short pieces (3m, 2 agents, 13m left) stay
+   whole; on a waiting card "Needs you" stays and what it waits on gives way */
+.hcard-text { flex: 0 1 auto; min-width: 2.5em; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.hcard-meta { flex: none; font-variant-numeric: tabular-nums; }
+.hcard.needs-you .hcard-text { flex: none; }
+.hcard.needs-you .hcard-meta { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hcard-meta::before { content: "·"; margin-right: 6px; opacity: 0.6; }
+/* waiting on the user stands out: an amber edge and an amber lead, nothing that glows */
+.hcard.needs-you { border-color: color-mix(in srgb, var(--st-waiting) 55%, transparent); box-shadow: inset 3px 0 0 var(--st-waiting); }
+.hcard.needs-you:focus-visible { box-shadow: var(--focus-ring), inset 3px 0 0 var(--st-waiting); }
+.hcard.needs-you .hcard-text { color: var(--st-waiting); font-weight: 600; }
+.hcard.st-error .hcard-text { color: var(--st-error); }
+.hcard-new { flex-direction: row; align-items: center; justify-content: center; gap: 10px; background: rgb(var(--home-scrim) / 0.3); }
+.hcard-new .hcard-title { flex: none; font-weight: 500; }
+.hcard-plus { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--home-edge); background: var(--home-glass); }
+.hcard-keys { display: inline-flex; gap: 3px; margin-left: 2px; }
+.hcard-keys .kbd { background: transparent; }
+.home-empty { margin-top: 14px; font-size: var(--fs-s); color: var(--text); text-shadow: var(--home-shadow); }
+.home-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* ---------- phone: same content, stacked ---------- */
+@media (max-width: 820px) {
+  .app.phone.view-home .pscreen { background: transparent; }
+  .app.phone .home { flex: 1 1 auto; padding: 0 12px 16px; }
+  .app.phone .home-inner { padding: 32px 0 8px; }
+  .app.phone .home-greet { font-size: 32px; }
+  .app.phone .home-when { margin-top: 6px; font-size: var(--fs-m); }
+  .app.phone .home-glance { margin-top: 20px; gap: 6px; }
+  .app.phone .home-label { margin-top: 28px; }
+  .app.phone .home-cards { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .app.phone .hcard { min-height: 0; padding: 12px 14px; }
+  .app.phone .hcard-new { min-height: 52px; }
+  .app.phone .pnav.has-home { grid-template-columns: repeat(5, 1fr); }
+  .app.phone .plist-mark { padding: 0; border: 0; background: transparent; cursor: pointer; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-clear, .bg-clear.out, .home-inner,
+  .app.fx-to-home .rail > *, .app.fx-from-home .rail > *,
+  .app.fx-to-home .deck > *, .app.fx-from-home .deck > * { animation: none; }
+  .app.on-home .bg-photo { transition: none; }
+}
+
+/* ---------- Since you left (lane recap, 2026-10-09) ----------
+   One quiet glass list, hairline rows, no colour except the state dot and a failed/waiting lead. Not blurred:
+   it can be ~6 rows tall (tall blurred panels drop raster tiles on this GPU), so it uses a denser scrim instead. */
+.hrecap-label { margin-top: 36px; }
+.hrecap-list {
+  list-style: none; margin: 0; padding: 0;
+  border-radius: var(--radius-l); border: 1px solid var(--home-edge);
+  background: rgb(var(--home-scrim) / 0.66); overflow: hidden;
+}
+.hrecap-li + .hrecap-li { border-top: 1px solid var(--home-edge); }
+.hrecap-row {
+  display: flex; flex-direction: column; gap: 3px; width: 100%; min-width: 0;
+  padding: 10px 14px; border: 0; background: transparent;
+  color: var(--text); text-align: left; font: inherit; cursor: pointer;
+  transition: background-color var(--dur) var(--ease);
+}
+@media (hover: hover) { .hrecap-row:hover { background: rgb(var(--home-scrim) / 0.35); } }
+.hrecap-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.hrecap-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hrecap-head .dot { flex: none; align-self: center; }
+.hrecap-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-m); font-weight: 600; }
+.hrecap-proj { flex: 0 1000 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
+.hrecap-out { flex: none; margin-left: auto; padding-left: 12px; font-size: var(--fs-s); color: var(--text-2); }
+.hrecap-row.oc-waiting .hrecap-out { color: var(--st-waiting); font-weight: 600; }
+.hrecap-row.oc-failed .hrecap-out { color: var(--st-error); font-weight: 600; }
+.hrecap-line {
+  display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap;
+  padding-left: 16px; font-size: var(--fs-s); color: var(--text-2);
+}
+.hrecap-err { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.hrecap-p { flex: 0 0 auto; display: inline-flex; gap: 5px; min-width: 0; }
+.hrecap-p.p-commits, .hrecap-p.p-files { flex: 0 1 auto; overflow: hidden; }
+.hrecap-d { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text-3, var(--text-2)); }
+.hrecap-g { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; }
+.hrecap-g.g-what { flex: 0 1 auto; }
+.hrecap-g.g-when { flex: none; }
+.hrecap-line > * + *::before, .hrecap-g > * + *::before { content: "·"; margin-right: 6px; opacity: 0.6; }
+.hrecap-more {
+  margin-top: 8px; padding: 2px 4px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-s); color: var(--text); text-shadow: var(--home-shadow);
+}
+@media (hover: hover) { .hrecap-more:hover { text-decoration: underline; text-underline-offset: 2px; } }
+.hrecap-more:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
+@media (max-width: 820px) {
+  .app.phone .hrecap-label { margin-top: 28px; }
+  .app.phone .hrecap-row { padding: 10px 12px; }
+  /* phone: error, what (commits / files) and when (cost / span) each get their own line instead of one cut line */
+  .app.phone .hrecap-line { flex-direction: column; align-items: stretch; gap: 2px; }
+  .app.phone .hrecap-line > * { max-width: 100%; }
+  .app.phone .hrecap-line > * + *::before { content: none; }
+  .app.phone .hrecap-proj { display: none; }   /* the title needs the width; the row's tooltip/label still names it */
+}
+
+/* lane prep-helm-auth-usage: API key = no usage limits. One chip in place of 5H / Week / pace; tooltip says why.
+   Same shrink rule as the pace chip so it can't push the row wider than a 320 px phone. */
+.hchip-nolimits { max-width: 100%; min-width: 0; }
+.hchip-nolimits .hchip-k { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

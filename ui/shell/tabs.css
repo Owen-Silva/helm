@@ -1,0 +1,82 @@
+/* Session tabs in the top strip (lane tabs). Desktop only: the phone layout never renders the strip.
+   Layout: [sidebar toggle] [tabs, shrinking then scrolling] [+] [drag space] [search] [update chip / conn].
+   The strip stays a window drag region; the tabs, + and search opt out (no-drag), and .strip-fill always
+   keeps some empty strip to grab. Look: neutral surfaces + hairlines like the rail buttons, no glow. */
+
+.strip.has-tabs { display: flex; align-items: center; gap: 8px; }
+.strip.has-tabs > .strip-left { flex: none; }
+.strip-fill { flex: 1 0 40px; align-self: stretch; }   /* drag space: never covered by tabs */
+.strip.has-tabs > .strip-search { flex: none; width: 156px; }
+.strip.has-tabs > .strip-right { flex: none; max-width: 40%; }
+.strip.has-tabs .upd-chip { margin-right: 0; }
+@media (max-width: 1599px) { .strip.has-tabs .upd-chip-sub { display: none; } }   /* the chip's tooltip still says why */
+@media (max-width: 1100px) {
+  .strip.has-tabs > .strip-search { width: auto; padding-right: 6px; }
+  .strip.has-tabs > .strip-search .grow { display: none; }
+}
+
+.tabs { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 4px; -webkit-app-region: no-drag; }
+.tabs-scroll {
+  display: flex; align-items: center; gap: 2px; min-width: 0;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px 1px;   /* room for the active tab's hairline + shadow */
+}
+.tabs-scroll::-webkit-scrollbar { display: none; }
+/* more tabs off an edge: fade that edge (data-fade set by tabs.js on scroll / resize, no polling) */
+.tabs-scroll[data-fade="r"] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.tabs-scroll[data-fade="l"] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+.tabs-scroll[data-fade="lr"] { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.tabs-new { flex: none; color: var(--text-2); }
+
+.tab {
+  position: relative; flex: 0 1 auto; width: 196px; min-width: 96px; height: 28px;   /* a definite width: every tab sizes alike, not by its title */
+  display: flex; align-items: center; gap: 7px; padding: 0 5px 0 10px;
+  border-radius: var(--radius-m); border: 1px solid transparent;
+  background: transparent; color: var(--text-2);
+  font-size: var(--fs-xs); line-height: 1; white-space: nowrap;
+  cursor: default; user-select: none; outline: none;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+@media (hover: hover) { .tab:hover { background: var(--surface-0); color: var(--text); } }
+.tab.on {
+  background: var(--surface-1); border-color: var(--hairline); color: var(--text);
+  box-shadow: inset 0 1px 0 var(--panel-edge), var(--shadow-1);
+}
+.tab.beside { border-color: var(--hairline); }   /* the other split pane */
+.tab:focus-visible { box-shadow: var(--focus-ring); }   /* the app's inset ring: an outer one bled onto the next tab */
+.tab.on:focus-visible { box-shadow: var(--focus-ring), var(--shadow-1); }
+.tab.unread .tab-title { color: var(--text); font-weight: 600; }
+.tab-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tab-fork { flex: none; color: var(--text-3); margin-right: -3px; }
+.tab-agents { flex: none; display: inline-flex; align-items: center; gap: 2px; color: var(--text-3); font-size: var(--fs-2xs); }
+.tab-x {
+  all: unset; flex: none; place-items: center;
+  width: 18px; height: 18px; border-radius: var(--radius-xs);
+  color: var(--text-3); display: none;   /* inactive tabs give the title that room */
+}
+.tab.on .tab-x, .tab:focus-visible .tab-x, .tab-x:focus-visible { display: grid; }
+.tab-x:focus-visible { box-shadow: var(--focus-ring); color: var(--text); }   /* all: unset above drops base.css's ring */
+@media (hover: hover) {
+  .tab:hover .tab-x { display: grid; }
+  .tab-x:hover { background: var(--surface-3); color: var(--text); }
+}
+
+/* waiting on the user: must stand out among the tabs (the sidebar uses the same warn tint) */
+.tab.st-waiting { background: var(--warn-soft); }
+.tab.st-waiting .tab-title { color: var(--warn); }
+.tab.st-waiting.on { background: var(--surface-1); border-color: color-mix(in srgb, var(--st-waiting) 45%, transparent); }
+@media (hover: hover) { .tab.st-waiting:not(.on):hover { background: color-mix(in srgb, var(--st-waiting) 20%, transparent); } }
+
+/* drag to reorder (lane tabsmooth): tabs.js moves the pressed tab with a transform every frame (.lifted, no
+   transition: it follows the pointer 1:1); the others slide aside / back with a short transform transition.
+   Raised look = a near-opaque lighter fill (the tabs it passes over don't show through) + the small shadow, no
+   glow. Reduced motion: base.css zeroes every transition, so the swaps still happen, just without the slide. */
+.tabs-scroll.reordering { cursor: grabbing; }
+.tabs-scroll.reordering .tab { transition: transform 150ms var(--ease); }
+.tabs-scroll.reordering .tab.lifted {   /* specific enough to beat .on, the waiting tint and its hover */
+  z-index: 2; transition: none; will-change: transform; cursor: grabbing;
+  background: var(--overlay); border-color: var(--hairline-strong); color: var(--text);
+  box-shadow: inset 0 1px 0 var(--panel-edge), var(--shadow-1);
+}
+.tabs-scroll.reordering .tab.lifted.st-waiting { border-color: color-mix(in srgb, var(--st-waiting) 45%, transparent); }

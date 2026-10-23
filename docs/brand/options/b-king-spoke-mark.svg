@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 176 176" width="176" height="176" fill="none">
+  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="50" stroke-width="15"/><path d="M143 128L178 128M128 143L128 178M113 128L78 128M128 113L128 78" stroke-width="11"/><path d="M170.43 85.57L187.4 68.6M188 128L212 128M170.43 170.43L187.4 187.4M128 188L128 212M85.57 170.43L68.6 187.4M68 128L44 128M85.57 85.57L68.6 68.6" stroke-width="15"/><path d="M128 68L128 38" stroke-width="15" stroke="#9fb4cc"/></g><circle cx="128" cy="128" r="15" fill="currentColor"/>
+</svg>

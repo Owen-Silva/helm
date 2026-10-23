@@ -1,0 +1,21 @@
+/* Home chip for Railway (ui/shell/railway-chip.js). Owner: lane railway. Rides on Home's .hchip look
+   (frosted pill) and adds only the button reset and state colour: amber = building/deploying,
+   red = failed/crashed or the check failed, otherwise neutral. */
+.rw-chip-wrap { display: inline-flex; min-width: 0; max-width: 100%; }
+.rw-chip {
+  font: inherit; font-size: var(--fs-s); cursor: pointer;
+  max-width: 100%; min-width: 0;
+  color: var(--text);
+}
+.rw-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+@media (hover: hover) { .rw-chip:hover { border-color: var(--hairline-strong); } }
+.rw-chip .hchip-k { flex: none; }
+.rw-chip-v { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.rw-chip-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.rw-chip.rw-busy .rw-chip-dot { background: var(--warn); }
+.rw-chip.rw-busy .rw-chip-v { color: var(--warn); }
+.rw-chip.rw-bad .rw-chip-dot, .rw-chip.rw-error .rw-chip-dot { background: var(--danger); }
+.rw-chip.rw-bad .rw-chip-v, .rw-chip.rw-error .rw-chip-v { color: var(--danger); }
+
+/* the panel inside the chip's dialog (phone, or no session open) */
+.rw-chip-sheet { margin: calc(-1 * var(--space-4)) -20px; }   /* cancels .pn-modal-body's padding: the panel pads itself */
