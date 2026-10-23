@@ -67,11 +67,14 @@ In plan mode, Claude ends with a "Ready to code?" card showing the plan.
   tool allowed for the rest of the session. Change the mode back from the composer any time.
 - **Keep planning** opens a box: say what to change, then **Send feedback** (or Ctrl+Enter).
 
-## Queue a prompt while it works
+## Send a message while it works
 
-Just type and press **Enter** while Claude is working. The send button becomes "Queue message",
-the message waits, and a "N queued" chip shows next to the context meter. It is sent as soon
-as the current turn ends. Queued prompts also work from the phone and the quick-prompt box.
+Just type and press **Enter** while Claude is working. Claude reads the message at its next step
+(after the current tool call): the turn is not interrupted and background agents keep running.
+Slash commands, and the moments a session is starting, compacting or being stopped, can't go in
+mid-turn: those messages wait instead, a "N queued" chip shows next to the context meter, and
+they are sent as soon as the current turn ends. This works from the phone and the quick-prompt
+box too.
 
 ## Talk instead of typing
 

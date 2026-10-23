@@ -125,7 +125,7 @@ The `helm` command comes from `bin\install-profile.ps1`; the Start Menu shortcut
 **Sessions**
 - Sidebar of projects, each with its sessions; status dot (working, waiting on you, error), unread count, pin to top.
 - New session dialog: project folder (Browse…), model, effort, permission mode, optional first prompt.
-- Split view: two sessions side by side (desktop).
+- Split view: two sessions side by side, or four at once in the corners (desktop).
 - Session header: editable title, folder, what it is doing now, live ETA when your eta mod reports one.
 - Close stops the Claude process now; the session stays listed and resumes on your next message.
 - Archive (stops it, files it in a collapsed Archived group; resumable), Unarchive, and Delete from Helm (removes only Helm's record after a confirm; Claude Code's transcript stays, so History can still resume it). Ctrl/Shift-click rows to archive several at once; sessions idle for a week get a quiet "archive them" link, never automatic.
@@ -141,7 +141,7 @@ The `helm` command comes from `bin\install-profile.ps1`; the Start Menu shortcut
 - Find in session (Ctrl+F), including inside collapsed cards; one click loads earlier messages and keeps searching.
 
 **Composer**
-- Enter sends; while Claude is working, Enter queues the message for after the current turn.
+- Enter sends. While Claude is working, the message goes to Claude at its next step (after the current tool call): nothing is interrupted and background agents keep running. Slash commands, and the moments a session is starting, compacting or being stopped, queue the message for after the turn instead.
 - `@` to mention a file, `/` for slash commands and skills.
 - Paste or drop images and files; drafts are kept per session.
 - Up/Down on an empty box walks your earlier prompts in that session.
@@ -189,7 +189,7 @@ The `helm` command comes from `bin\install-profile.ps1`; the Start Menu shortcut
 | Ctrl+H | History |
 | Ctrl+, | Settings |
 | Ctrl+F | Find in the session (Enter next, Shift+Enter previous, Esc close) |
-| Enter / Shift+Enter | Send (or queue while working) / new line |
+| Enter / Shift+Enter | Send (while Claude works: at its next step) / new line |
 | Esc (in the composer) | Close the open menu, or stop the running turn |
 | Up / Down (empty composer) | Earlier / later prompts in this session |
 | Tab or Enter (in an `@` or `/` menu) | Pick the highlighted item |
