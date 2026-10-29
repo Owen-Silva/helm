@@ -48,7 +48,15 @@ function connect() {
     if (nodes > 50 && text > 20) break;
     await sleep(500);
   }
-  if (nodes <= 50 || text <= 20) fail(`the UI did not render (${nodes} elements, ${text} characters of text)`);
+  if (nodes <= 50 || text <= 20) {
+    // why: the renderer console, the page, and any resource that did not load
+    const con = await c.call('test.console', {}).catch((e) => ({ entries: [`test.console failed: ${e.message}`] }));
+    const page = await evalJs('({ url: location.href, html: document.documentElement.outerHTML.slice(0, 1500), bad: performance.getEntriesByType("resource").filter((e) => e.responseStatus && e.responseStatus !== 200).map((e) => `${e.responseStatus} ${e.name}`).slice(0, 20) })').catch((e) => ({ error: e.message }));
+    fs.writeFileSync(path.join(outDir, 'ui-console.json'), JSON.stringify({ console: con.entries, page }, null, 2));
+    console.log('console:', JSON.stringify((con.entries || []).slice(0, 12)).slice(0, 3000));
+    console.log('failed resources:', JSON.stringify(page.bad || page.error));
+    fail(`the UI did not render (${nodes} elements, ${text} characters of text)`);
+  }
   notes.push(`UI rendered (${nodes} elements)`);
   await c.call('test.capture', { file: path.join(outDir, 'ui-home-1280.png'), waitMs: 1500 });
 
