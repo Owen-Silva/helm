@@ -23,7 +23,8 @@ How-tos for everyday tasks: [docs/GUIDE.md](docs/GUIDE.md).
 
 - **Windows 10 or 11** (x64). Helm is Windows-only today: the launcher, firewall script, tray and
   `Helm.exe` stamping are Windows-specific.
-- **Node.js 22 or newer** and npm (developed on Node 24).
+- **Node.js 22 or newer** and npm (developed on Node 24), only to run Helm from source. The installer needs
+  neither.
 - **Your own Claude Code install.** Helm runs the `claude` CLI already on your PC (by default
   `%USERPROFILE%\.local\bin\claude.exe`; set `HELM_CLAUDE_EXE` to use another path). Install it
   from Anthropic first: https://code.claude.com/docs
@@ -33,6 +34,29 @@ How-tos for everyday tasks: [docs/GUIDE.md](docs/GUIDE.md).
 - Optional: `git` on PATH (Changes panel, worktrees), the `railway` CLI (Railway panel).
 
 ## Install
+
+### With the installer
+
+1. Install Claude Code from Anthropic (https://code.claude.com/docs) and sign in once: open a terminal, run
+   `claude` and follow its sign-in.
+2. Download **Helm-Setup.exe** from the [latest release](https://github.com/Owen-Silva/helm/releases/latest).
+3. Run it. The installer isn't code-signed, so Microsoft Defender SmartScreen shows "Windows protected your PC":
+   click **More info**, then **Run anyway**. There is no admin prompt.
+4. It installs for your Windows account only, to `%LOCALAPPDATA%\Programs\helm`, adds **Helm** to the Start
+   Menu and to Settings → Apps, and opens Helm.
+5. On first run, Helm downloads Anthropic's Claude Agent SDK onto your PC (about 1.6 MB, once; see
+   [What the installer contains](#what-the-installer-contains)). The window shows the progress. If the download
+   fails (offline, or npm is blocked on your network), it says why, with **Try again**.
+
+**Updates:** Settings → Helm → Updates checks GitHub for a newer release and links its installer. Run the new
+Helm-Setup.exe over the old one; settings and sessions stay. If Helm is running, the installer asks you to quit
+it first (tray icon → **Quit Helm**).
+
+**Uninstall:** Settings → Apps → Helm → Uninstall. That also removes the downloaded SDK. Your settings,
+sessions and logs in `%APPDATA%\Helm` stay; delete that folder too for a clean slate. Claude Code itself is
+yours and stays installed.
+
+### From source
 
 ```powershell
 git clone https://github.com/Owen-Silva/helm.git
@@ -52,13 +76,27 @@ powershell -ExecutionPolicy Bypass -File bin\install-profile.ps1    # `helm` in 
 `ui/vendor/` is committed, so `npm run vendor` is only needed when you upgrade a UI library. There is
 no build step for the UI.
 
-### Releases are source-only
+### What the installer contains
 
-Helm is distributed as source only. **Never publish a packaged build** (zip, installer, or the
-`dist\Helm` folder) that bundles any `@anthropic-ai/claude-agent-sdk*` package or `claude.exe`: they
-are Anthropic's proprietary software and are not Helm's to redistribute. `tools/make-exe.js` builds a
-local launcher that runs this folder; it is for your own machine, not for release. Everyone who runs
-Helm installs Claude Code and runs `npm install` themselves.
+The Claude Agent SDK (`@anthropic-ai/claude-agent-sdk*`) and Claude Code (`claude.exe`) are Anthropic's
+proprietary software and are not Helm's to redistribute. So **the installer contains no Anthropic software**:
+
+- **Inside:** Helm's own code (GPL-3.0), Electron (MIT, with Chromium's licences), and the three npm packages
+  Helm's main process loads (`ws`, `web-push`, `diff`, with their dependencies; all open source).
+- **Not inside:** any `@anthropic-ai` package and any `claude.exe`. The installer workflow
+  (`.github/workflows/installer.yml`) unpacks every build with 7-Zip and fails if one is there
+  (`tools/check-installer.js`).
+- **On first run, on your PC:** Helm downloads the SDK from the npm registry, the same package `npm install`
+  gets: the version `package-lock.json` pins, checked against its sha512. It goes to
+  `%LOCALAPPDATA%\Helm\claude-agent-sdk`. Only the SDK's main package is fetched, not its optional package
+  with a bundled `claude.exe`: Helm runs your own Claude Code. To use an npm mirror, set `HELM_NPM_REGISTRY`
+  (or npm's own `registry` setting); the sha512 check still applies.
+- **Still yours to install:** Claude Code itself, signed in to your account (see [Requirements](#requirements)).
+
+`tools/build-installer.js` builds the installer. **Never publish any other packaged build** (a zip, or the
+`dist\Helm` folder) that bundles an `@anthropic-ai/claude-agent-sdk*` package or `claude.exe`.
+`tools/make-exe.js` builds a local launcher that runs this folder; it is for your own machine, not for
+release. Everyone who runs Helm from source installs Claude Code and runs `npm install` themselves.
 
 ## Authentication
 
@@ -225,7 +263,9 @@ Everything is in `%APPDATA%\Helm`:
 | `logs\main.log` | The app log (rotates at 2 MB to `main.log.1`). Engine lines log at info: one short line per background task change, and every failure. Set `HELM_LOG_LEVEL=debug` before starting Helm to add the full task JSON. |
 | `backgrounds\` | Photos you added |
 
-Conversations themselves stay where Claude Code keeps them (`~\.claude\projects`).
+Conversations themselves stay where Claude Code keeps them (`~\.claude\projects`). An installed Helm also
+keeps the Claude Agent SDK it downloaded in `%LOCALAPPDATA%\Helm\claude-agent-sdk` (`HELM_SDK_DIR` moves
+it); the uninstaller removes it.
 
 ## For maintenance
 

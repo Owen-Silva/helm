@@ -9,9 +9,11 @@
 // LICENSING GUARD: never publish what this script builds, and never add a packaging step that copies
 // node_modules into a release. node_modules/@anthropic-ai/claude-agent-sdk* (including the platform
 // packages that contain claude.exe) is Anthropic's proprietary software, not covered by Helm's GPL, and
-// Helm has no right to redistribute it. Helm releases are SOURCE-ONLY: users install their own Claude
-// Code and run `npm install` themselves. Any future installer must exclude every
-// @anthropic-ai/claude-agent-sdk* package and claude(.exe) and require the user's own Claude Code.
+// Helm has no right to redistribute it. From source, users install their own Claude Code and run
+// `npm install` themselves. The only packaged release is the Windows installer (tools/build-installer.js): it
+// excludes every @anthropic-ai/claude-agent-sdk* package and claude(.exe) (tools/check-installer.js fails the
+// build otherwise), downloads the SDK from npm on the user's own PC on first run, and requires the user's own
+// Claude Code.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');

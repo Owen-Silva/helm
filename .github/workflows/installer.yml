@@ -1,0 +1,103 @@
+# Windows installer: build Helm-Setup.exe from a clean checkout, prove no Anthropic software is inside, install /
+# run / uninstall it on the runner, and (optionally) put it on a DRAFT release. Manual only: Actions > installer >
+# Run workflow. A draft is invisible to the public; publishing it (and creating its tag) is done by hand.
+name: installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft_release:
+        description: 'Upload Helm-Setup.exe to a DRAFT release v<package.json version> (never published by this workflow)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer
+  cancel-in-progress: false
+
+jobs:
+  unit:
+    name: Unit tests (host + engine)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: npm ci (no Electron binary)
+        run: npm ci --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Host tests
+        run: npm run test:host
+      - name: Engine tests
+        run: node --test "test/engine/*.test.js"
+
+  build:
+    name: Build + install test
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # No root npm install: the stage installs only the app's runtime dependencies, and never the Claude Agent SDK.
+      - name: Build Helm-Setup.exe (and the 7-Zip licensing guard)
+        run: node tools/build-installer.js
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Helm-Setup
+          path: dist/installer/out/Helm-Setup.exe
+          if-no-files-found: error
+      - name: Install test (install, guard, first run offline + online, uninstall)
+        shell: pwsh
+        run: ./tools/installer-ci-test.ps1 -Setup dist/installer/out/Helm-Setup.exe -Out dist/installer/ci
+      - name: Upload test evidence (screenshots, logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-test-evidence
+          path: dist/installer/ci/
+          if-no-files-found: ignore
+
+  draft:
+    name: Draft release
+    needs: [unit, build]
+    if: ${{ inputs.draft_release }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Helm-Setup
+          path: out
+      - name: Create or refresh the DRAFT release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          v=$(node -p "require('./package.json').version")
+          tag="v$v"
+          # Look the release up by listing (drafts have no tag yet, so /releases/tags/<tag> can't see them).
+          found=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | \"\(.id) \(.draft)\"" | head -n1)
+          if [ -n "$found" ]; then
+            id=${found%% *}; draft=${found##* }
+            if [ "$draft" != "true" ]; then echo "::error::$tag is already published; this workflow never changes a published release"; exit 1; fi
+            for a in $(gh api "repos/$GITHUB_REPOSITORY/releases/$id/assets" --jq '.[] | select(.name == "Helm-Setup.exe") | .id'); do
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$a"
+            done
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -f target_commitish="$GITHUB_SHA" -F draft=true > /dev/null
+            gh release upload "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "Helm $v" --notes-file build/release-notes.md
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | \"DRAFT_RELEASE draft=\(.draft) \(.html_url) assets=\([.assets[] | \"\(.name) \(.size)\"] | join(\", \"))\""
