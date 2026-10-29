@@ -8,7 +8,8 @@
 # 3. first run with the npm registry unreachable: the SDK download fails VISIBLY (exit 1, a reason, a screenshot)
 # 4. first run online: Helm downloads the Claude Agent SDK from npm, loads it and gets to ready (engine "real")
 # 5. a second run with the registry unreachable still starts (the downloaded copy is reused, no network)
-# 6. an uninstall while this install's Helm runs refuses (exit 3) and leaves Helm running
+# 6. the UI renders and Settings > Helm shows the Updates row (tools/installer-ui-check.js); an uninstall while
+#    this install's Helm runs refuses (exit 3) and leaves Helm running
 # 7. silent uninstall: the folder, shortcut, Apps entry and the downloaded SDK are gone
 # Prints one summary line: INSTALL_TEST PASS|FAIL ...
 # Owner: lane installer.
@@ -121,6 +122,11 @@ Remove-Item -Force -ErrorAction SilentlyContinue $readyRun
 $helm = StartHelm 'running' @('--test', '--profile=ci-running')
 for ($i = 0; $i -lt 120 -and -not (Test-Path $readyRun); $i++) { Start-Sleep -Milliseconds 500 }
 if (-not (Test-Path $readyRun)) { Fail 'the long-running Helm never got ready' }
+# the UI renders from the installed files; Settings > Helm shows the Updates row (real check + a simulated new version)
+$ui = node tools/installer-ui-check.js $readyRun $Out dist/installer/app/node_modules/ws
+$ui | ForEach-Object { Write-Host $_ }
+if ($LASTEXITCODE -ne 0) { Fail 'the UI check failed' }
+Ok (($ui | Select-String 'UI_CHECK PASS: (.*)').Matches[0].Groups[1].Value)
 $un = Join-Path $dir 'Uninstall Helm.exe'
 $p = Start-Process -FilePath $un -ArgumentList @('/S', "_?=$dir") -PassThru -Wait
 $helm.Refresh()
