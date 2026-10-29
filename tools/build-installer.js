@@ -78,6 +78,16 @@ function anthropicPaths(dir) {
   return bad;
 }
 
+const TEXT = /\.(html|js|mjs|cjs|css|json|md|webmanifest|svg|txt)$/i;
+
+// main/server.js hashes the page's inline import map for its CSP from the file's bytes; the browser hashes it after
+// turning CRLF into LF. A CRLF page = a different hash = the import map is blocked and the UI stays blank.
+function checkCsp(file) {
+  const html = fs.readFileSync(file, 'utf8');
+  if (html.includes('\r')) fail(`${path.relative(STAGE, file)} has CRLF line endings; its inline import map would fail the CSP and the UI would not load`);
+  say(`CSP check: ${path.relative(STAGE, file)} has LF line endings (the inline import map's CSP hash matches the browser's)`);
+}
+
 function stage() {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const lock = JSON.parse(fs.readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8'));
@@ -95,8 +105,12 @@ function stage() {
     if (!fs.existsSync(src)) continue; // deleted in the work tree
     const dst = path.join(STAGE, f);
     fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.copyFileSync(src, dst);
+    // text files keep the repo's LF endings: a Windows checkout with core.autocrlf turns them into CRLF, and
+    // ui/index.html's CSP pins the sha256 of its inline import map as committed (CRLF = blocked = no UI)
+    if (TEXT.test(f)) fs.writeFileSync(dst, fs.readFileSync(src, 'utf8').replace(/\r\n/g, '\n'));
+    else fs.copyFileSync(src, dst);
   }
+  checkCsp(path.join(STAGE, 'ui', 'index.html'));
 
   // npm packages the app's main process really loads; each must be a dependency of the repo
   const need = new Set();
