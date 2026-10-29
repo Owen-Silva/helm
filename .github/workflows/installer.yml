@@ -92,12 +92,8 @@ jobs:
           if [ -n "$found" ]; then
             id=${found%% *}; draft=${found##* }
             if [ "$draft" != "true" ]; then echo "::error::$tag is already published; this workflow never changes a published release"; exit 1; fi
-            for a in $(gh api "repos/$GITHUB_REPOSITORY/releases/$id/assets" --jq '.[] | select(.name == "Helm-Setup.exe") | .id'); do
-              gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$a"
-            done
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -f target_commitish="$GITHUB_SHA" -F draft=true > /dev/null
-            gh release upload "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY"
-          else
-            gh release create "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "Helm $v" --notes-file build/release-notes.md
+            # our own unpublished draft from an earlier run: replace it (editing a draft can drop its tag name)
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
           fi
+          gh release create "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "Helm $v" --notes-file build/release-notes.md
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | \"DRAFT_RELEASE draft=\(.draft) \(.html_url) assets=\([.assets[] | \"\(.name) \(.size)\"] | join(\", \"))\""
