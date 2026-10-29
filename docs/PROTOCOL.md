@@ -851,8 +851,41 @@ UpdateState = {
     phase: "settling"|"waiting"|"restarting", reasons: ["1 session working", "2 agents running"],
     reason: "waiting: 1 session working · 2 agents running" },
   restarted: null | { at, auto, by, from, to, commits },  // the restart this process came from (restart.json)
+  release?: ReleaseState,   // INSTALLED builds only (lane installer); a clone build never has the key
 }
 ```
+
+**Installed builds (lane installer).** An installed Helm has no git checkout, so the commit watcher above has
+nothing to watch. `main/release-check.js` asks GitHub Releases instead (`GET
+https://api.github.com/repos/Owen-Silva/helm/releases/latest` through Electron's `net.fetch`, so the system
+proxy applies; 20 s timeout), 20 s after start and then every 6 h, and compares the release's `tag_name`
+(leading `v` stripped, numeric x.y.z) with the running version. It never downloads or installs anything: the
+UI links the installer and the user runs it. `UpdateState.release` (also on `app.hello` `update` and every
+`app.update` event while it changes):
+
+```js
+ReleaseState = {
+  mode: "installer", current: "1.2.0",            // the running version
+  phase: "idle"|"checking"|"current"|"available"|"none"|"failed",
+  checkedAt: null | ms,                            // when the last check finished (any outcome)
+  latest: null | { version: "1.3.0", tag: "v1.3.0", name, url /* the release page (html_url) */,
+    download /* the Helm-Setup.exe asset's browser_download_url, or null when the release has none */, publishedAt },
+  reason: null | string,   // one plain sentence, for "failed" and "none" ("No release of Helm has been published yet.")
+  detail: null | string,   // failures only: the technical part (HTTP status, error code / message)
+}
+```
+
+`latest` survives a later failed check (the last good answer). A newer tag = `available`; equal or older =
+`current`; 404 = `none`; a tag that is not x.y.z, a network error (offline, DNS, refused, proxy, certificate),
+the timeout, GitHub's rate limit (403 with `x-ratelimit-remaining: 0`, or 429: the reason says when it can
+check again), another HTTP status or an unreadable answer = `failed` with a reason. Settings > Helm shows the
+installed version in "Running", an "Updates" row for every phase (Download the installer / What's new /
+Check now) and hides the auto-restart toggle; the chip shows "Update available · <version>" when nothing else
+is showing.
+
+| method | params | result |
+| --- | --- | --- |
+| `app.checkUpdates` | `{}` | INSTALLED builds only: runs a release check now (joins one already running) and resolves to `ReleaseState` when it finishes; it never rejects for a failed check (that is `phase: "failed"`). A clone build answers error `not_installed`. |
 
 Session gains `openTasks: number` (live only, like `agentsRunning`): non-agent background tasks in the CLI
 (`local_bash`, Monitor, workflows, MCP tasks), from `task_started` / `task_notification` / `task_updated`

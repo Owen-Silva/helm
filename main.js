@@ -13,6 +13,9 @@
 //   --quick               open the quick-prompt box (also from a second launch)
 //   --test-desktop        (test) real desktop behaviour in the throwaway profile: tray, close-to-tray,
 //                         global hotkey, Tailscale bind; used by tools/desktop-check.js
+//   --exit-when-ready     (test) exit once ready (installed builds: after loading the downloaded SDK);
+//                         used by the installer's CI install test
+//   --sdk-capture=<png>   (test, installed builds) capture the "Getting Helm ready" window when it finishes
 //
 // The user runs it as dist/Helm/Helm.exe "<this folder>" (tools/make-exe.js: Electron renamed and
 // stamped with ui/assets/icon.ico), so Windows shows Helm's own name and icon everywhere.
@@ -24,6 +27,10 @@ const os = require('os');
 const path = require('path');
 
 const pkg = require('./package.json');
+// lane installer: a build made by the Windows installer (main/distribution.js), never a checkout or the make-exe
+// launcher. Only then: the Claude Agent SDK is downloaded on first run (main/sdk-setup.js) and updates come from
+// GitHub releases (main/release-check.js). Everything else runs exactly as in a checkout.
+const INSTALLED = require('./main/distribution').isInstalledBuild({ pkg, appDir: __dirname, resourcesPath: process.resourcesPath });
 
 // ---------- flags + profile (before anything touches userData) ----------
 const argv = process.argv.slice(1);
@@ -457,6 +464,7 @@ const UPDATE_REPO = (TEST && process.env.HELM_TEST_UPDATE_REPO) || __dirname;
 let updateTiming = {};
 try { if (TEST && process.env.HELM_TEST_UPDATE_TIMING) updateTiming = JSON.parse(process.env.HELM_TEST_UPDATE_TIMING) || {}; } catch {}
 let updater = null;
+let releaseCheck = null; // lane installer: main/release-check.js, installed builds only
 let restarting = false;
 // The user's input in any Helm window or the phone (app.input, throttled by the UI) and unsent composer
 // attachments per desktop client (attachments are not saved like drafts, so a restart would drop them).
@@ -575,6 +583,11 @@ async function windowRestart() {
 }
 
 const restartMethods = {
+  // lane installer: 'Check now' in Settings > Helm. Installed builds only; a checkout updates with git.
+  'app.checkUpdates': async () => {
+    if (!releaseCheck) throw Object.assign(new Error('Helm checks GitHub releases only when it was installed with the installer; this copy is a git checkout.'), { code: 'not_installed' });
+    return releaseCheck.check();
+  },
   // { force?, whenIdle?, cancel? } -> { restarting: true } | { deferred: true, reasons } | { cancelled }, or error
   // `busy` naming what a restart would cut off. whenIdle: "Restart when finished" (waits on the same check).
   'app.restart': async (p, client) => {
@@ -778,6 +791,21 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   lockDownSessions();
 
+  // lane installer: an installed build has no node_modules\@anthropic-ai (its installer may not contain Anthropic's
+  // software), so it downloads the pinned SDK from npm on first run, with a window that shows progress and any
+  // failure's reason. A checkout skips this block entirely.
+  let installedSdk = null;
+  if (INSTALLED) {
+    log(`installed build ${pkg.version} in ${path.dirname(process.execPath)}`);
+    const r = await require('./main/sdk-setup').prepareSdk({ electron, pkg, log, test: TEST, capture: TEST ? opt('sdk-capture') : null, icon: ICON_ICO, dark: nativeTheme.shouldUseDarkColors });
+    if (!r.ok) {
+      log(r.quit ? 'sdk: the user quit before the Claude Agent SDK was ready' : 'sdk: not ready; a test run exits 1');
+      app.exit(r.quit ? 0 : 1);
+      return;
+    }
+    installedSdk = r;
+  }
+
   settings = createSettings({
     userDataDir, uiBgDir: path.join(UI_DIR, 'assets', 'backgrounds'), emit: hostEmit, log,
     onLocalChange: (before, after) => { if (look) look.onLocalChange(before, after); },
@@ -815,7 +843,9 @@ app.whenReady().then(async () => {
   const { mod, kind } = loadEngine();
   try {
     engine = await mod.createEngine({ userDataDir, emit: hostEmit, log: (...a) => log('[engine]', ...a), getDefaults: () => settings.get().defaults, getIdleCloseMs: idleCloseMs, getKeep: keepThroughRestart,
-      childEnv: (env) => auth.childEnv(env), startBlock: () => auth.startBlock(), onAuthError: (text) => auth.noteAuthError(text) });
+      childEnv: (env) => auth.childEnv(env), startBlock: () => auth.startBlock(), onAuthError: (text) => auth.noteAuthError(text),
+      // lane installer: the downloaded SDK (a file URL outside the app folder); a checkout imports it from node_modules
+      ...(installedSdk ? { sdkEntry: installedSdk.sdk.entryUrl, sdkVersion: installedSdk.sdk.version } : {}) });
   } catch (e) {
     log('engine failed to start; using the fallback engine', e);
     engineReason = `The engine failed to start: ${String((e && e.message) || e).split('\n')[0]}`;
@@ -942,11 +972,24 @@ app.whenReady().then(async () => {
     getBlockers: (o) => restartReasons(o),
     restart: (i) => performRestart({ ...i, by: i && i.deferred ? i.by : 'update' }),
     isAutoRestart: () => settings.get().autoRestart !== false,
-    extra: () => ({ bootedAt: BOOTED_AT, restarted: restartedFrom ? { at: restartedFrom.at, auto: !!restartedFrom.auto, by: restartedFrom.by || null, from: restartedFrom.from || null, to: restartedFrom.to || null, commits: Array.isArray(restartedFrom.commits) ? restartedFrom.commits : [] } : null }),
+    extra: () => ({ bootedAt: BOOTED_AT, restarted: restartedFrom ? { at: restartedFrom.at, auto: !!restartedFrom.auto, by: restartedFrom.by || null, from: restartedFrom.from || null, to: restartedFrom.to || null, commits: Array.isArray(restartedFrom.commits) ? restartedFrom.commits : [] } : null,
+      // lane installer: installed builds only (a checkout's state has no `release` key)
+      ...(releaseCheck ? { release: releaseCheck.state() } : {}) }),
   });
+  // lane installer: an installed build has no git checkout to watch, so it checks GitHub releases instead and
+  // Settings > Helm says "Helm <v> is available" with a link to the installer (never a silent "updates off").
+  if (INSTALLED) {
+    releaseCheck = require('./main/release-check').createReleaseCheck({
+      current: pkg.version, fetch: (u, o) => electron.net.fetch(u, o), log: (...a) => log('[release]', ...a),
+      onChange: () => { if (updater) updater.refresh(); },
+      ...(TEST ? { startDelayMs: 3_600e3 } : {}), // a test run only checks when asked (app.checkUpdates)
+    });
+    releaseCheck.start();
+  }
   updater.start();
 
   createWindow();
+  if (installedSdk) installedSdk.dispose(); // lane installer: the hidden setup window, once the main window exists
   badge.refreshWindow();
   if (DESKTOP) hotkey.apply(settings.get().quickPromptHotkey);
   loginItem.apply(settings.get().launchAtLogin);
@@ -957,10 +1000,21 @@ app.whenReady().then(async () => {
   else if (!TEST && settings.get().quickPromptHotkey) setTimeout(() => { try { quick.warm(); } catch (e) { log('quick warm', e); } }, 8000).unref?.();
 
   if (TEST) {
-    const ready = { pid: process.pid, port: server.port, token, userDataDir, engine: engineKind, exe: process.execPath, desktop: DESKTOP };
+    const ready = { pid: process.pid, port: server.port, token, userDataDir, engine: engineKind, exe: process.execPath, desktop: DESKTOP,
+      // lane installer: installed builds only (the installer's CI smoke test reads these)
+      ...(installedSdk ? { installed: true, version: pkg.version, sdk: { version: installedSdk.sdk.version, dir: installedSdk.sdk.dir, fetched: !!installedSdk.sdk.fetched, entryUrl: installedSdk.sdk.entryUrl } } : {}) };
     fs.writeFileSync(path.join(userDataDir, 'ready.json'), JSON.stringify(ready));
     console.log('HELM_READY ' + JSON.stringify(ready));
     if (flags.capture) captureWhenRendered(flags.capture);
+    // lane installer: --exit-when-ready (test only): load the SDK the engine will run, report, then exit 0, so the
+    // installer's CI can launch the installed Helm and uninstall it afterwards
+    if (flag('exit-when-ready')) {
+      const sdkCheck = installedSdk ? import(installedSdk.sdk.entryUrl).then((m) => typeof m.query === 'function', (e) => `failed: ${e.message}`) : Promise.resolve(null);
+      sdkCheck.then((query) => {
+        console.log('HELM_EXIT_WHEN_READY ' + JSON.stringify({ engine: engineKind, sdkQuery: query }));
+        setTimeout(() => app.exit(query === false || typeof query === 'string' ? 1 : 0), flags.capture ? 5000 : 500);
+      });
+    }
   }
 }).catch((e) => { log('boot failed', e); dialog.showErrorBox('Helm could not start', String(e && e.stack || e)); app.exit(1); });
 

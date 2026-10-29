@@ -15,6 +15,7 @@
 //   getDefaults() → { model, effort, permissionMode, cwd }   (Helm settings.defaults)
 //   claudePath    claude executable (default HELM_CLAUDE_EXE or ~/.local/bin/claude.exe)
 //   sdk           injected SDK module { query } (tests); default dynamic import of the real SDK
+//   sdkEntry      file URL of the SDK to import instead (installed builds: the copy main/sdk-setup.js downloaded)
 //   projectsDir   Claude Code projects dir (default ~/.claude/projects)
 //   statuslineDir mission-control status line dir (usage fallback)
 //   etaDir        eta mod snapshots (default ~/.claude/mods-data/eta; false = no eta)
@@ -166,7 +167,8 @@ function createEngine(options = {}) {
   let sdkPromise = null;
   const loadSdk = () => {
     if (options.sdk) return Promise.resolve(options.sdk);
-    if (!sdkPromise) sdkPromise = import('@anthropic-ai/claude-agent-sdk');
+    // options.sdkEntry: an installed build's downloaded SDK (main/sdk-setup.js, a file URL); a checkout uses node_modules
+    if (!sdkPromise) sdkPromise = options.sdkEntry ? import(options.sdkEntry) : import('@anthropic-ai/claude-agent-sdk');
     return sdkPromise;
   };
   // lane helm-settings-freeze: importing the SDK compiles ~1.2 MB of ESM on the main thread (180-400 ms measured).

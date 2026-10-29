@@ -1,10 +1,12 @@
 // Restart + updates (PROTOCOL "Restart + updates"): Settings > Helm (running commit, update ready + why it
 // is waiting, Restart Helm, the auto-restart toggle) and the quiet "Update ready" chip in the top strip
 // (phone: above the list). Owner: lane restart.
+// lane installer: an INSTALLED build has no git checkout; UpdateState.release (present only there) is the
+// GitHub Releases check instead: an "Updates" row + an "Update available" chip. Without it nothing changes.
 import { signal } from '@preact/signals';
 import { html } from '../lib/html.js';
 import { Icon } from '../lib/icons.js';
-import { settings, saveSettings, toast, updateState, restartingNow, restartHelm, cancelRestartWhenIdle } from '../lib/store.js';
+import { settings, saveSettings, toast, updateState, restartingNow, restartHelm, cancelRestartWhenIdle, checkForUpdates } from '../lib/store.js';
 import { go, isPhone } from './state.js';
 import { cx, ago } from './util.js';
 
@@ -47,6 +49,41 @@ export function openHelmSettings() {
   requestAnimationFrame(find);
 }
 
+// lane installer: x.y.z newer? (the last good `latest` survives a failed check; still worth the download link)
+const ver = (v) => String(v || '').replace(/^v/, '').split('.').map(Number);
+const newer = (a, b) => { const x = ver(a), y = ver(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; };
+const relLink = (l) => (l && (l.download || l.url)) || null;
+export async function checkNow() {
+  try {
+    const r = await checkForUpdates();
+    if (r && r.mode === 'installer') updateState.value = { ...updateState.value, release: r };
+  } catch (e) { toast({ title: 'Could not check for updates', error: e, kind: 'error' }); }
+}
+
+// Settings > Helm, installed builds: checking / up to date / available / none / failed, each with its why.
+function ReleaseRow({ rel }) {
+  const l = rel.latest;
+  const checking = rel.phase === 'checking';
+  const avail = l && (rel.phase === 'available' || (rel.phase !== 'current' && newer(l.version, rel.current)));
+  const when = rel.checkedAt ? ` · checked ${clock(rel.checkedAt)}` : '';
+  const status = checking ? html`<span class="upd-going"><span class="spinner sm"></span>Checking GitHub for a new version…</span>`
+    : rel.phase === 'current' ? `Up to date${when}`
+    : rel.phase === 'available' && l ? html`<span class="upd-dot" aria-hidden="true"></span>Helm ${l.version} is available${when}${l.download ? '' : ' · no installer attached yet, the link opens the release page'}`
+    : rel.phase === 'none' || rel.phase === 'failed' ? `${rel.reason || (rel.phase === 'none' ? 'No release published yet.' : 'The update check failed.')}${when}`
+    : 'Not checked yet: Helm checks GitHub shortly after it starts.';
+  return html`<div class="set-row upd-release" data-phase=${rel.phase}>
+    <div class="set-row-label"><span>Updates</span>
+      <span class="hint upd-why" title=${rel.detail || null}>${status}</span>
+      ${rel.phase === 'failed' && avail ? html`<span class="hint"><span class="upd-dot" aria-hidden="true"></span>Helm ${l.version} is available (from the last check)</span>` : null}
+      ${rel.phase === 'failed' && rel.detail ? html`<span class="hint mono upd-detail">${rel.detail}</span>` : null}</div>
+    <div class="set-row-ctl upd-ctl upd-rel-ctl">
+      ${avail ? html`<a class="btn btn-sm btn-primary" data-act="download-update" href=${relLink(l)} target="_blank" rel="noopener">Download the installer</a>
+        <a class="btn btn-sm" data-act="release-notes" href=${l.url} target="_blank" rel="noopener">What's new</a>` : null}
+      <button class="btn btn-sm" data-act="check-updates" disabled=${checking} onClick=${checkNow}><${Icon} name="refresh" size=${14} />Check now</button>
+    </div>
+  </div>`;
+}
+
 function Commit({ c }) {
   return html`<span class="upd-commit"><span class="mono">${c.short || '—'}</span>${c.subject ? html`<span class="upd-subj">${c.subject}</span>` : null}</span>`;
 }
@@ -61,12 +98,15 @@ export function UpdateSettings() {
   const going = restartingNow.value;
   const d = u && u.deferred; // lane restart: "Restart when finished" is waiting
   const extra = p && p.commits && p.commits.length > 1 ? p.commits.length - 1 : 0;
+  const rel = u && u.release; // lane installer: installed builds only
   return html`
     <div class="set-row">
       <div class="set-row-label"><span>Running</span>
         <span class="hint">${run && run.startedAt ? `Started ${clock(run.startedAt)} (${ago(run.startedAt)})` : 'Started —'}${run && run.branch ? ` · ${run.branch}` : ''}</span></div>
-      <div class="set-row-ctl upd-ctl">${run && run.sha ? html`<${Commit} c=${run} />` : html`<span class="hint">Not a git checkout: updates are not detected</span>`}</div>
+      <div class="set-row-ctl upd-ctl">${rel ? html`<span class="upd-commit"><span class="mono">Helm ${rel.current}</span><span class="upd-subj">installed</span></span>`
+        : run && run.sha ? html`<${Commit} c=${run} />` : html`<span class="hint">Not a git checkout: updates are not detected</span>`}</div>
     </div>
+    ${rel && html`<${ReleaseRow} rel=${rel} />`}
     ${p && html`<div class="set-row upd-ready" data-phase=${p.phase}>
       <div class="set-row-label"><span><span class="upd-dot" aria-hidden="true"></span>Update ready</span>
         <span class="hint upd-why">${p.phase === 'restarting' ? 'Restarting…' : !auto ? 'Restart to load it' : p.reason || 'Restarts when idle'}</span></div>
@@ -75,7 +115,7 @@ export function UpdateSettings() {
     <div class=${cx('set-row', conf && 'stack')}>
       <div class="set-row-label"><span>Restart Helm</span>
         <span class="hint">${d && !going ? html`<span class="upd-dot" aria-hidden="true"></span>Restarts when finished · ${d.reason || 'waiting'}`
-          : 'Quits and reopens to load updates. Anything still running stops, so Helm offers to wait for it.'}</span></div>
+          : `Quits and reopens${rel ? ' Helm' : ' to load updates'}. Anything still running stops, so Helm offers to wait for it.`}</span></div>
       <div class="set-row-ctl">
         ${going ? html`<span class="hint upd-going"><span class="spinner sm"></span>Restarting…</span>`
           : d ? html`<button class="btn btn-sm" data-act="restart-cancel-wait" onClick=${cancelWhenFinished}>Don't restart</button>`
@@ -98,12 +138,12 @@ export function UpdateSettings() {
         </div>
       </div>`}
     </div>
-    <div class="set-row">
+    ${!rel && html`<div class="set-row">
       <div class="set-row-label"><span>Restart automatically when Helm updates</span>
         <span class="hint">After a new commit, once nothing is running and you have not used Helm for 2 minutes.</span></div>
       <div class="set-row-ctl"><button class="toggle" role="switch" aria-checked=${auto} aria-label="Restart automatically when Helm updates"
         onClick=${() => saveSettings({ autoRestart: !auto }).catch((e) => toast({ title: 'Setting not saved', error: e, kind: 'error' }))}></button></div>
-    </div>`;
+    </div>`}`;
 }
 
 // The quiet chip: only while an update is pending (or a restart is under way).
@@ -112,7 +152,7 @@ export function UpdateChip() {
   const p = u && u.pending;
   const d = u && u.deferred; // lane restart: "Restart when finished" is waiting
   const going = restartingNow.value || (p && p.phase === 'restarting') || (d && d.phase === 'restarting');
-  if (!p && !d && !going) return null;
+  if (!p && !d && !going) return ReleaseChip({ rel: u && u.release });
   const auto = !u || u.autoRestart !== false;
   const why = going ? 'Helm is restarting' : d ? `Restarts when finished · ${d.reason || 'waiting'}` : p.reason || '';
   const phone = isPhone.value;
@@ -124,5 +164,16 @@ export function UpdateChip() {
       <span class="upd-dot" aria-hidden="true"></span>
       <button class="upd-chip-open" onClick=${openHelmSettings} aria-label=${`Update ready. ${why}`}>Update ready${auto ? html`<span class="upd-chip-sub">${' · restarts when idle'}</span>` : null}</button>
       <button class="upd-chip-act" data-act="restart-now" onClick=${() => requestRestart({ fromChip: true })}>Restart now</button>`}
+  </div>`;
+}
+
+// lane installer: installed builds, a newer release and nothing else to show: the quiet "Update available" chip.
+function ReleaseChip({ rel }) {
+  if (!rel || rel.phase !== 'available' || !rel.latest) return null;
+  const l = rel.latest;
+  return html`<div class=${cx('upd-chip', isPhone.value && 'phone')} role="status" title=${`Helm ${l.version} is available`}>
+    <span class="upd-dot" aria-hidden="true"></span>
+    <button class="upd-chip-open" onClick=${openHelmSettings} aria-label=${`Helm ${l.version} is available. Open Settings`}>Update available<span class="upd-chip-sub">${` · ${l.version}`}</span></button>
+    <a class="upd-chip-act" data-act="download-update" href=${relLink(l)} target="_blank" rel="noopener">Download</a>
   </div>`;
 }

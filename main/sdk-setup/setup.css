@@ -1,0 +1,44 @@
+/* "Getting Helm ready" window (main/sdk-setup.js). Helm's own tokens (ui/styles/tokens.css), copied: this page
+   loads from disk before Helm's UI server exists. Neutral grey, one restrained accent. Owner: lane installer. */
+:root {
+  color-scheme: dark light;
+  --bg: #1e1f22; --card: #26282b; --line: #3a3d41; --text: #ececea; --muted: #a3a6aa;
+  --accent: #9fb4cc; --accent-text: #11161c; --bad: #e0a39a; --track: #34373b;
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f4f4f5; --card: #ffffff; --line: #dcdee2; --text: #0b0e1a; --muted: #5b6070; --accent: #4d6784; --accent-text: #ffffff; --bad: #9b3b2e; --track: #e6e8ec; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; user-select: none; }
+.card { height: 100%; padding: 22px 26px 18px; display: flex; flex-direction: column; gap: 10px; }
+h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.lede { margin: 0; color: var(--muted); }
+code { font-family: var(--mono); font-size: 12.5px; }
+.what { margin: 4px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 13px; }
+.what dt { color: var(--muted); }
+.what dd { margin: 0; font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; user-select: text; }
+.bar { position: relative; height: 6px; margin-top: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.bar span { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 3px; background: var(--accent); transition: width 160ms ease-out; }
+.indeterminate .bar span { width: 30%; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { left: -30%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .bar span { transition: none; } .indeterminate .bar span { animation: none; width: 100%; opacity: 0.35; } }
+.status { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+[data-phase="failed"] .bar { display: none; }
+.fail { border-left: 2px solid var(--bad); padding: 2px 0 2px 12px; }
+.fail .reason { margin: 0; color: var(--text); font-weight: 500; user-select: text; }
+.fail .detail { margin: 4px 0 0; color: var(--muted); font-family: var(--mono); font-size: 11.5px; overflow-wrap: anywhere; user-select: text; max-height: 3.2em; overflow: auto; }
+footer { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.note { margin: 0; font-size: 12.5px; color: var(--muted); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.btns { display: flex; gap: 8px; flex: none; }
+.btns[hidden], .fail[hidden] { display: none; }
+button { font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+button:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+button.primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--text)); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.55; cursor: default; }

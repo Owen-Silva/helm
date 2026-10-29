@@ -939,3 +939,6 @@ html[data-theme="light"] .palette { background: var(--surface-solid); -webkit-ba
 .upd-chip.phone .upd-chip-act { height: 28px; }
 .upd-chip.phone .upd-chip-open { flex: 1; }
 @media (max-width: 360px) { .upd-chip.phone .upd-chip-sub { display: none; } }
+/* lane installer: the installed build's "Updates" row (UpdateState.release) */
+.upd-rel-ctl { flex-wrap: wrap; align-items: center; }
+.upd-detail { font-size: var(--fs-xs); overflow-wrap: anywhere; }

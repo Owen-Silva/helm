@@ -348,6 +348,8 @@ export async function restartHelm({ force = false, whenIdle = false, confirmKept
   return rpc('app.restart', { force: true });
 }
 export const cancelRestartWhenIdle = () => rpc('app.restart', { cancel: true });
+// lane installer: installed builds only (UpdateState.release): check GitHub Releases now -> the release state
+export const checkForUpdates = () => rpc('app.checkUpdates');
 
 // ---- lane look-sync: shared look with Quartz + Mantle (PROTOCOL "Look Sync") ----
 // look = app.hello `look` / the `look.updated` event: { sync: { enabled, state, reason, rev, by, at, skipped },
