@@ -64,6 +64,10 @@ Ok 'Start Menu shortcut -> Helm.exe'
 $entry = AppsEntry
 if (-not $entry -or -not $entry.UninstallString) { Fail 'no Settings > Apps (HKCU Uninstall) entry' }
 Ok "Apps entry '$($entry.DisplayName)' $($entry.DisplayVersion) by '$($entry.Publisher)'"
+$vi = (Get-Item $exe).VersionInfo
+$si = (Get-Item $Setup).VersionInfo
+if ($vi.CompanyName -ne $entry.Publisher) { Fail "Helm.exe CompanyName '$($vi.CompanyName)' is not the Apps entry publisher '$($entry.Publisher)'" }
+Ok "Properties: Helm.exe '$($vi.CompanyName)' / '$($vi.LegalCopyright)'; setup '$($si.CompanyName)' / '$($si.LegalCopyright)'"
 
 # ---------- 2. licensing guard over the installed folder ----------
 node tools/check-installer.js $dir

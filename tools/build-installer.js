@@ -125,7 +125,7 @@ function stage() {
 
   const appPkg = {
     name: pkg.name, productName: pkg.productName, version: pkg.version, description: pkg.description, main: pkg.main,
-    author: { name: 'Owen Silva' }, license: pkg.license, private: true,
+    author: { name: 'Atlas Studio' }, license: pkg.license, private: true, // electron-builder: Apps "Publisher", exe CompanyName
     helmDistribution: 'installer', helmSdk, dependencies: deps,
   };
   fs.writeFileSync(path.join(STAGE, 'package.json'), JSON.stringify(appPkg, null, 2) + '\n');
@@ -140,7 +140,7 @@ function builderConfig(pkg) {
   return {
     appId: 'com.owensilva.helm', // = main.js AUMID: the Start Menu shortcut and Helm's toasts must agree
     productName: 'Helm',
-    copyright: `Copyright (C) ${new Date().getFullYear()} Owen Silva`,
+    copyright: `Copyright (C) ${new Date().getFullYear()} Atlas Studio`,
     electronVersion: electron,
     asar: false,               // main/ runs workers and spawns scripts from its own folder; plain files keep that simple
     npmRebuild: false,          // no native modules
