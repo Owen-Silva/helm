@@ -351,12 +351,14 @@ systems **on its own**:
 - **GitHub** (`api.github.com`): an installed Helm checks for a newer release 20 seconds after it starts and then
   every 6 hours (`GET /repos/Owen-Silva/helm/releases/latest`, user agent `Helm/<version>`). It sends nothing
   about you or your sessions, and it never downloads or installs an update itself.
+- **Your Claude Code's sign-in check**: once after it starts, Helm runs your Claude Code's read-only
+  `claude auth status --json` to show whether you are signed in. Anything Claude Code itself contacts for that
+  is governed by Anthropic's terms (links below).
 
 Everything else happens only because you, or the person operating Helm, asked for it:
 
 - **Anthropic**, through your own Claude Code: the sessions you start (and overnight queue jobs you schedule)
   send your prompts and the files Claude Code reads to Anthropic, exactly as Claude Code in a terminal does.
-  Helm also runs your Claude Code's `claude auth status` once after it starts, to show whether it is signed in.
   What Claude Code sends is governed by Anthropic's terms and privacy policy:
   https://code.claude.com/docs/en/legal-and-compliance and https://www.anthropic.com/legal/privacy.
 - **Your phone over Tailscale:** with phone access on (the default) and Tailscale running, Helm listens on your
