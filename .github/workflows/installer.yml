@@ -75,6 +75,9 @@ jobs:
   # DRAFT release it always was. Needs: secret SIGNPATH_API_TOKEN, variables SIGNPATH_PROJECT_SLUG and
   # SIGNPATH_POLICY_SLUG. Every job before the signing request runs on a GitHub-hosted runner (SignPath OSS rule).
   # SignPath signs the tested Helm-Setup.exe that the build job uploaded; an approver must approve each request.
+  # This job hands its github.token to SignPath, so the token is read-only: SignPath's documented needs are
+  # actions: read (job details, the artifact download) and contents: read. It writes nothing to the repo or the
+  # release; the separate draft job below holds contents: write and never talks to SignPath.
   sign:
     name: Sign (SignPath)
     needs: [unit, build]
@@ -84,8 +87,12 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      sha256: ${{ steps.verify.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Check the SignPath settings
         id: cfg
         shell: pwsh
@@ -121,6 +128,7 @@ jobs:
           parameters: |
             version: ${{ toJSON(steps.cfg.outputs.version) }}
       - name: Verify the signature
+        id: verify
         shell: pwsh
         run: |
           $f = 'signed/Helm-Setup.exe'
@@ -139,6 +147,7 @@ jobs:
           $h = (Get-FileHash -Algorithm SHA256 $f).Hash.ToLower()
           $len = (Get-Item $f).Length
           Write-Output "sha256=$h size=$len"
+          "sha256=$h" >> $env:GITHUB_OUTPUT
           "Signed Helm-Setup.exe: $($s.Status), $($s.SignerCertificate.Subject); sha256 $h; $len bytes" >> $env:GITHUB_STEP_SUMMARY
       # Nothing to re-hash after signing: Helm's updater (main/release-check.js) only reads releases/latest and links
       # the Helm-Setup.exe asset; it never downloads or checks the installer itself. electron-builder writes no
@@ -156,16 +165,36 @@ jobs:
     # Unsigned (no SIGNPATH_ORGANIZATION_ID): sign is skipped and this runs exactly as before. Signing on: only a
     # successfully signed and verified installer is drafted; a failed or rejected signing request drafts nothing.
     if: ${{ !cancelled() && inputs.draft_release && needs.unit.result == 'success' && needs.build.result == 'success' && (needs.sign.result == 'success' || (needs.sign.result == 'skipped' && vars.SIGNPATH_ORGANIZATION_ID == '')) }}
-    runs-on: ubuntu-latest
+    # Signed: Windows, so this job can check the Authenticode signature itself before it uploads anything.
+    # Unsigned: ubuntu-latest, as before. The release script runs under bash on both.
+    runs-on: ${{ needs.sign.result == 'success' && 'windows-latest' || 'ubuntu-latest' }}
     timeout-minutes: 10
     permissions:
       contents: write
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.sign.result == 'success' && 'Helm-Setup-signed' || 'Helm-Setup' }}
           path: out
+      # Trust nothing the sign job said: re-check the downloaded file is the one it verified, and still Valid.
+      - name: Re-verify the signed installer before uploading it
+        if: ${{ needs.sign.result == 'success' }}
+        shell: pwsh
+        env:
+          SIGNED_SHA256: ${{ needs.sign.outputs.sha256 }}
+        run: |
+          $f = 'out/Helm-Setup.exe'
+          if (-not (Test-Path $f)) { Write-Output "::error::no $f in the Helm-Setup-signed artifact"; exit 1 }
+          $h = (Get-FileHash -Algorithm SHA256 $f).Hash.ToLower()
+          if (-not $env:SIGNED_SHA256 -or $h -ne $env:SIGNED_SHA256) { Write-Output "::error::$f sha256 $h is not the file the sign job verified ($env:SIGNED_SHA256)"; exit 1 }
+          $s = Get-AuthenticodeSignature $f
+          Write-Output "status=$($s.Status) ($($s.StatusMessage)) signer=$($s.SignerCertificate.Subject) timestamp=$(if ($s.TimeStamperCertificate) { $s.TimeStamperCertificate.Subject } else { 'none' }) sha256=$h"
+          if ($s.Status -ne 'Valid') { Write-Output "::error::Helm-Setup.exe signature is $($s.Status): $($s.StatusMessage)"; exit 1 }
+          if (-not $s.TimeStamperCertificate) { Write-Output '::error::Helm-Setup.exe is signed but not timestamped'; exit 1 }
       - name: Create or refresh the DRAFT release
         env:
           GH_TOKEN: ${{ github.token }}
