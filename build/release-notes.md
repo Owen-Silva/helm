@@ -9,3 +9,5 @@ Helm for Windows: a per-user installer (no admin prompt).
 **What's inside:** Helm's own code (GPL-3.0), Electron and three small open-source libraries. **No Anthropic software:** on first run Helm downloads Anthropic's Claude Agent SDK onto your PC from the npm registry, the same package `npm install` gets, and checks it against a pinned sha512. It installs to `%LOCALAPPDATA%\Programs\helm`; uninstall from Settings > Apps.
 
 Building from source still works exactly as before: see the README.
+
+**Code signing policy:** https://github.com/Owen-Silva/helm#code-signing-policy

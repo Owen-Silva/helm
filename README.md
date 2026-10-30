@@ -309,6 +309,68 @@ ui/  Preact + htm + signals through an import map; no build step
 
 Design notes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Wire protocol: [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
+## Building the installer
+
+The Windows installer is built only by the public GitHub Actions workflow
+[`.github/workflows/installer.yml`](.github/workflows/installer.yml) (Actions → installer → Run workflow), on
+GitHub-hosted runners, from a clean checkout of this repo. To build the same thing on your own PC (Windows,
+Node 24 and 7-Zip; no `npm install` needed in the repo):
+
+```powershell
+node tools/build-installer.js    # dist\installer\out\Helm-Setup.exe
+```
+
+It stages the git-tracked app files, installs only the main process's runtime dependencies, builds an NSIS
+installer with electron-builder, then unpacks it with 7-Zip and fails if any Anthropic package or `claude.exe`
+is inside (`tools/check-installer.js`). The workflow also runs the unit tests, installs, starts and uninstalls
+the build on the runner, and uploads it to a draft release that is published by hand.
+
+## Code signing policy
+
+**Status: not signed yet.** Helm-Setup.exe is currently unsigned. Helm is set up for SignPath Foundation's
+free open-source code signing; once SignPath approves the project, Windows releases (Helm-Setup.exe) will be
+signed by SignPath Foundation, and each release's notes say whether its installer is signed.
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)
+
+- Committers and reviewers: [Owen-Silva](https://github.com/Owen-Silva)
+- Approvers: [Owen-Silva](https://github.com/Owen-Silva)
+
+Only installers built by the [installer workflow](.github/workflows/installer.yml) from this repository's source
+are submitted for signing, and every signing request is approved by hand.
+
+### Privacy
+
+Helm has no telemetry, analytics or crash reporting, and no account or server of its own. It contacts these
+systems **on its own**:
+
+- **The npm registry** (`registry.npmjs.org`, or the mirror you set in `HELM_NPM_REGISTRY` or npm's `registry`
+  setting): on first run, and after an update that pins a different SDK version, an installed Helm downloads the
+  Claude Agent SDK package (an ordinary HTTPS download; see
+  [What the installer contains](#what-the-installer-contains)).
+- **GitHub** (`api.github.com`): an installed Helm checks for a newer release 20 seconds after it starts and then
+  every 6 hours (`GET /repos/Owen-Silva/helm/releases/latest`, user agent `Helm/<version>`). It sends nothing
+  about you or your sessions, and it never downloads or installs an update itself.
+
+Everything else happens only because you, or the person operating Helm, asked for it:
+
+- **Anthropic**, through your own Claude Code: the sessions you start (and overnight queue jobs you schedule)
+  send your prompts and the files Claude Code reads to Anthropic, exactly as Claude Code in a terminal does.
+  Helm also runs your Claude Code's `claude auth status` once after it starts, to show whether it is signed in.
+  What Claude Code sends is governed by Anthropic's terms and privacy policy:
+  https://code.claude.com/docs/en/legal-and-compliance and https://www.anthropic.com/legal/privacy.
+- **Your phone over Tailscale:** with phone access on (the default) and Tailscale running, Helm listens on your
+  PC's Tailscale address for your own devices; every connection needs Helm's key. Tailnet HTTPS (`tailscale
+  serve`) is set up only from Settings → Phone, and Web Push notifications go to your phone's push service
+  (for example Google's, for Chrome on Android) only after you turn them on on the phone.
+- **Tools you already use:** the Railway panel runs your own Railway CLI while that panel or its Home chip is
+  on screen; the production guard runs your `git` and `gh` to check a push a session is about to make; Git
+  commands a session runs reach the remotes you configured; links open in your browser when you click them.
+
+Voice input is transcribed on your PC (a local Whisper model; audio never leaves it). A copy run from a git
+checkout instead of the installer makes no update check over the network: it only watches its own checkout for
+new commits.
+
 ## License
 
 Helm is free software under the GNU General Public License v3.0 only; see [LICENSE](LICENSE). A section 7

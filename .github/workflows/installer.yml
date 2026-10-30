@@ -1,6 +1,7 @@
 # Windows installer: build Helm-Setup.exe from a clean checkout, prove no Anthropic software is inside, install /
 # run / uninstall it on the runner, and (optionally) put it on a DRAFT release. Manual only: Actions > installer >
 # Run workflow. A draft is invisible to the public; publishing it (and creating its tag) is done by hand.
+# Code signing is optional and off until the repo variable SIGNPATH_ORGANIZATION_ID is set (see the sign job).
 name: installer
 
 on:
@@ -41,6 +42,8 @@ jobs:
     name: Build + install test
     runs-on: windows-latest
     timeout-minutes: 40
+    outputs:
+      unsigned-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,6 +53,7 @@ jobs:
       - name: Build Helm-Setup.exe (and the 7-Zip licensing guard)
         run: node tools/build-installer.js
       - name: Upload the installer
+        id: upload-unsigned
         uses: actions/upload-artifact@v4
         with:
           name: Helm-Setup
@@ -66,10 +70,92 @@ jobs:
           path: dist/installer/ci/
           if-no-files-found: ignore
 
+  # Optional SignPath signing (README "Code signing policy"). Runs only when the repo variable
+  # SIGNPATH_ORGANIZATION_ID is set; with it unset this job is skipped and the run is exactly the unsigned build +
+  # DRAFT release it always was. Needs: secret SIGNPATH_API_TOKEN, variables SIGNPATH_PROJECT_SLUG and
+  # SIGNPATH_POLICY_SLUG. Every job before the signing request runs on a GitHub-hosted runner (SignPath OSS rule).
+  # SignPath signs the tested Helm-Setup.exe that the build job uploaded; an approver must approve each request.
+  sign:
+    name: Sign (SignPath)
+    needs: [unit, build]
+    if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+    runs-on: windows-latest
+    timeout-minutes: 75
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the SignPath settings
+        id: cfg
+        shell: pwsh
+        env:
+          TOKEN_SET: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+          PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          POLICY_SLUG: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          ARTIFACT_ID: ${{ needs.build.outputs.unsigned-artifact-id }}
+        run: |
+          $missing = @()
+          if ($env:TOKEN_SET -ne 'true') { $missing += 'secret SIGNPATH_API_TOKEN' }
+          if (-not $env:PROJECT_SLUG) { $missing += 'variable SIGNPATH_PROJECT_SLUG' }
+          if (-not $env:POLICY_SLUG) { $missing += 'variable SIGNPATH_POLICY_SLUG' }
+          if (-not $env:ARTIFACT_ID) { $missing += 'the build job''s artifact id (upload-unsigned)' }
+          if ($missing) { Write-Output "::error::SIGNPATH_ORGANIZATION_ID is set, so this run signs, but it is missing: $($missing -join ', ')"; exit 1 }
+          $v = node -p "require('./package.json').version"
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Output "signing Helm-Setup.exe $v (artifact $env:ARTIFACT_ID) with project $env:PROJECT_SLUG, policy $env:POLICY_SLUG"
+      # upload-artifact zips Helm-Setup.exe, so the SignPath artifact configuration's root is <zip-file> with
+      # <pe-file path="Helm-Setup.exe">; the action unzips the signed result into signed/.
+      - name: Submit the signing request and wait for approval
+        id: signpath
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ needs.build.outputs.unsigned-artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+          parameters: |
+            version: ${{ toJSON(steps.cfg.outputs.version) }}
+      - name: Verify the signature
+        shell: pwsh
+        run: |
+          $f = 'signed/Helm-Setup.exe'
+          if (-not (Test-Path $f)) {
+            Get-ChildItem -Recurse signed -ErrorAction SilentlyContinue | ForEach-Object { Write-Output "  $($_.FullName) $($_.Length)" }
+            Write-Output "::error::SignPath returned no $f"; exit 1
+          }
+          $s = Get-AuthenticodeSignature $f
+          $v = (Get-Item $f).VersionInfo
+          Write-Output "status=$($s.Status) ($($s.StatusMessage))"
+          Write-Output "signer=$($s.SignerCertificate.Subject)"
+          Write-Output "timestamp=$(if ($s.TimeStamperCertificate) { $s.TimeStamperCertificate.Subject } else { 'none' })"
+          Write-Output "product=$($v.ProductName) $($v.ProductVersion) file=$($v.FileVersion)"
+          if ($s.Status -ne 'Valid') { Write-Output "::error::Helm-Setup.exe signature is $($s.Status): $($s.StatusMessage)"; exit 1 }
+          if (-not $s.TimeStamperCertificate) { Write-Output '::error::Helm-Setup.exe is signed but not timestamped, so the signature would stop validating when the certificate expires'; exit 1 }
+          $h = (Get-FileHash -Algorithm SHA256 $f).Hash.ToLower()
+          $len = (Get-Item $f).Length
+          Write-Output "sha256=$h size=$len"
+          "Signed Helm-Setup.exe: $($s.Status), $($s.SignerCertificate.Subject); sha256 $h; $len bytes" >> $env:GITHUB_STEP_SUMMARY
+      # Nothing to re-hash after signing: Helm's updater (main/release-check.js) only reads releases/latest and links
+      # the Helm-Setup.exe asset; it never downloads or checks the installer itself. electron-builder writes no
+      # latest.yml or .blockmap (publish: null, differentialPackage: false in tools/build-installer.js).
+      - name: Upload the signed installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Helm-Setup-signed
+          path: signed/Helm-Setup.exe
+          if-no-files-found: error
+
   draft:
     name: Draft release
-    needs: [unit, build]
-    if: ${{ inputs.draft_release }}
+    needs: [unit, build, sign]
+    # Unsigned (no SIGNPATH_ORGANIZATION_ID): sign is skipped and this runs exactly as before. Signing on: only a
+    # successfully signed and verified installer is drafted; a failed or rejected signing request drafts nothing.
+    if: ${{ !cancelled() && inputs.draft_release && needs.unit.result == 'success' && needs.build.result == 'success' && (needs.sign.result == 'success' || (needs.sign.result == 'skipped' && vars.SIGNPATH_ORGANIZATION_ID == '')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -78,13 +164,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: Helm-Setup
+          name: ${{ needs.sign.result == 'success' && 'Helm-Setup-signed' || 'Helm-Setup' }}
           path: out
       - name: Create or refresh the DRAFT release
         env:
           GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ needs.sign.result == 'success' }}
         run: |
           set -euo pipefail
+          notes=build/release-notes.md
+          if [ "$SIGNED" = "true" ]; then node tools/release-notes.js --signed > "$RUNNER_TEMP/release-notes.md"; notes="$RUNNER_TEMP/release-notes.md"; fi
           v=$(node -p "require('./package.json').version")
           tag="v$v"
           # Look the release up by listing (drafts have no tag yet, so /releases/tags/<tag> can't see them).
@@ -95,5 +184,5 @@ jobs:
             # our own unpublished draft from an earlier run: replace it (editing a draft can drop its tag name)
             gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
           fi
-          gh release create "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "Helm $v" --notes-file build/release-notes.md
+          gh release create "$tag" out/Helm-Setup.exe --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "Helm $v" --notes-file "$notes"
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | \"DRAFT_RELEASE draft=\(.draft) \(.html_url) assets=\([.assets[] | \"\(.name) \(.size)\"] | join(\", \"))\""
